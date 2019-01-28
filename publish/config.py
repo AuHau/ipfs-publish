@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import pathlib
@@ -35,18 +36,14 @@ class Config:
     def _load_data(self, data):  # type: (typing.Dict[str, typing.Any]) -> typing.Tuple[dict, typing.Dict[str, publishing.Repo]]
         self._verify_data(data)
 
-        repos = {}
-        for key, value in data['repos'].items():
-            repo = publishing.Repo.from_toml(value, self)
+        repos: typing.Dict[str, publishing.Repo] = {}
+        for key, value in data.pop('repos', {}).items():
+            repo = publishing.Repo.from_toml_dict(value, self)
             repos[repo.name] = repo
 
-        data.pop('repos')
         return data, repos
 
     def _verify_data(self, data):
-        if 'repos' not in data or not isinstance(data['repos'], dict):
-            raise exceptions.ConfigException('\'repos\' is required table with all configured repos!')
-
         def _recursive_check(data, schema):
             if isinstance(schema, set):
                 schema = dict.fromkeys(schema, None)
@@ -61,6 +58,16 @@ class Config:
 
         _recursive_check(data, self.MANDATORY_FIELDS)
 
+    def save(self):
+        data = json.loads(json.dumps(self.data))
+        data['repos'] = {}
+
+        for repo in self.repos.values():
+            data['repos'][repo.name] = repo.to_toml_dict()
+
+        with self.loaded_path.open('w') as f:
+            toml.dump(data, f)
+
     def __getitem__(self, item):
         return self.data.get(item)  # TODO: [Q] Is this good idea? Return None instead of KeyError?
 
@@ -70,8 +77,13 @@ class Config:
     @property
     def ipfs(self):  # type: () -> ipfsapi.Client
         if self._ipfs is None:
-            logger.info('Connecting and caching to IPFS host \'{}\' on port {}'.format(self['ipfs']['host'], self['ipfs']['port']))
-            self._ipfs = ipfsapi.connect(self['ipfs']['host'], self['ipfs']['port'])
+            host = port = None
+            if self['ipfs'] is not None:
+                host = self['ipfs']['host']
+                port = self['ipfs']['port']
+
+            logger.info('Connecting and caching to IPFS host \'{}\' on port {}'.format(host, port))
+            self._ipfs = ipfsapi.connect(host, port)
 
         return self._ipfs
 
@@ -96,6 +108,11 @@ class Config:
                 path = pathlib.Path(os.environ[CONFIG_PATH_ENV_NAME])
             else:
                 path = pathlib.Path(cls.DEFAULT_CONFIG_PATH)
+
+                # Default config should exist, if not lets create it.
+                if not path.exists():
+                    logger.info('No default config was found, creating new one!')
+                    path.write_text('')
 
         logger.info('Loading and caching config from file: {}'.format(path))
         cls._instance = cls(path)

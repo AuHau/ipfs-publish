@@ -53,7 +53,6 @@ async def _handle_github(repo):
 
     loop = asyncio.get_event_loop()
 
-    # we are publishing the repo in background ==> no await
     # noinspection PyAsyncCall
     loop.run_in_executor(None, repo.publish_repo)
 
@@ -68,7 +67,6 @@ async def _handle_generic(repo):
 
     loop = asyncio.get_event_loop()
 
-    # we are publishing the repo in background ==> no await
     # noinspection PyAsyncCall
     loop.run_in_executor(None, repo.publish_repo)
 

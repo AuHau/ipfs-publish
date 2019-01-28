@@ -1,66 +1,154 @@
 import hmac
 import logging
+import os
 import pathlib
+import re
+import secrets
 import shutil
+import string
+import subprocess
 import tempfile
+import typing
 
+import click
 import git
+import inquirer
+import ipfsapi
 
-from publish import config as config_module, exceptions, PUBLISH_IGNORE_FILENAME
+from publish import config as config_module, exceptions, PUBLISH_IGNORE_FILENAME, DEFAULT_LENGTH_OF_SECRET, \
+    IPNS_KEYS_NAME_PREFIX, IPNS_KEYS_TYPE, helpers
 
 logger = logging.getLogger('publish.publishing')
 
 
 def get_name_from_url(url):  # type: (str) -> str
-    return url.replace('https://', '')
+    return re.sub(r'\W', '_', url.replace('https://', ''))
+
+
+def validate_url(url):
+    """
+    Attribution goes to Django project.
+
+    :param url:
+    :return:
+    """
+    regex = re.compile(
+        r'^(?:http)s?://'
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+    return re.match(regex, url) is not None
+
+
+def validate_repo(url):
+    if not validate_url(url):
+        return False
+
+    result = subprocess.run('git -c core.askpass=\'echo\' ls-remote ' + url, shell=True, capture_output=True)
+    if result.returncode != 0:
+        print('\nError! ' + result.stderr.decode('utf-8'))
+
+    return result.returncode == 0
 
 
 class Repo:
+    TOML_MAPPING = {
+        'name': None,
+        'git_repo_url': None,
+        'secret': None,
+        'publish_dir': None,
+        'last_ipfs_addr': None,
+        'pin': None,
+        'build_bin': 'execute',
+        'after_publish_bin': 'execute',
+        'republish': 'ipns',
+        'ipns_key': 'ipns',
+        'ipns_addr': 'ipns',
+        'ipns_lifetime': 'ipns',
+    }
 
-    def __init__(self, name, git_repo_url, secret, ipns_key, config, ipns_lifetime='24h', republish=False, pin=True,
-                 last_hash=None):
+    def __init__(self, config: config_module.Config, name: str, git_repo_url: str, secret: str,
+                 ipns_addr: typing.Optional[str] = None, ipns_key: typing.Optional[str] = None, ipns_lifetime='24h',
+                 republish=False, pin=True, last_ipfs_addr=None, publish_dir: str = '/',
+                 build_bin=None, after_publish_bin=None):
         self.name = name
         self.git_repo_url = git_repo_url
         self.secret = secret
-        self.ipns_key = ipns_key
-        self.republish = republish
+        self.config = config
+
+        # IPFS setting
         self.pin = pin
-        self.config = config  # type: config_module.Config
-        self.last_hash = last_hash
+        self.republish = republish
+        self.ipns_key = ipns_key
+        self.last_ipfs_addr = last_ipfs_addr
         self.ipns_lifetime = ipns_lifetime
+        self.ipns_addr = ipns_addr
+
+        # Build etc. setting
+        self.publish_dir = publish_dir
+        self.build_bin = build_bin
+        self.after_publish_bin = after_publish_bin
 
     @property
     def is_github(self):
         return 'github' in self.git_repo_url
 
+    @property
+    def webhook_url(self):
+        if self.is_github:
+            return f'/publish/{self.name}'
+        else:
+            return f'/publish/{self.name}?secret={self.secret}'
+
+    def _run_bin(self, cwd, bin):
+        os.chdir(cwd)
+
+        r = subprocess.run(bin, capture_output=True)
+
+        if r.returncode != 0:
+            logger.debug(f'STDERR: {r.stderr.decode("utf-8")}')
+            logger.debug(f'STDOUT: {r.stdout.decode("utf-8")}')
+            raise exceptions.RepoException(f'\'{bin}\' binary exited with non-zero code!')
+
     def publish_repo(self):
         path = self._clone_repo()
+
+        if self.build_bin is not None:
+            self._run_bin(path, self.build_bin)
+
         self._remove_ignored_files(path)
 
         ipfs = self.config.ipfs
-        if not self.config['keep_pinned_previous_versions'] and self.last_hash is not None:
-            logger.info('Unpinning hash: {}'.format(self.last_hash))
-            ipfs.pin_rm(self.last_hash)
+        if not self.config['keep_pinned_previous_versions'] and self.last_ipfs_addr is not None:
+            logger.info(f'Unpinning hash: {self.last_ipfs_addr}')
+            ipfs.pin_rm(self.last_ipfs_addr)
 
         result = ipfs.add(str(path), recursive=True, pin=self.pin)
-        self.last_hash = '/ipfs/{}/'.format(result[-1]['Hash'])
-        logger.info('Repo successfully added to IPFS with hash: {}'.format(self.last_hash))
+        self.last_ipfs_addr = f'/ipfs/{result[-1]["Hash"]}/'
+        logger.info(f'Repo successfully added to IPFS with hash: {self.last_ipfs_addr}')
 
-        self.publish_name()
+        if self.ipns_key is not None:
+            self.publish_name()
+
+        if self.after_publish_bin is not None:
+            self._run_bin(path, self.after_publish_bin)
+
         self._cleanup_repo(path)
 
     def publish_name(self):
-        if self.last_hash is None:
+        if self.last_ipfs_addr is None:
             return
 
         logger.info('Updating IPNS name')
         ipfs = self.config.ipfs
-        ipfs.name_publish(self.last_hash)
+        ipfs.name_publish(self.last_ipfs_addr)
         logger.info('IPNS successfully published')
 
     def _clone_repo(self):
         path = tempfile.mkdtemp()
-        logger.info('Cloning repo: \'{}\' to {}'.format(self.git_repo_url, path))
+        logger.info(f'Cloning repo: \'{self.git_repo_url}\' to {path}')
 
         git.Repo.clone_from(self.git_repo_url, path)
 
@@ -92,14 +180,126 @@ class Repo:
 
         return True
 
+    @staticmethod
+    def _cleanup_repo(path):
+        logging.info(f'Cleaning up path: {path}')
+        shutil.rmtree(path)
+
+    def to_toml_dict(self) -> dict:
+        out = {}
+        for attr, section in self.TOML_MAPPING.items():
+            value = getattr(self, attr, None)
+
+            if section is None:
+                if value is not None:
+                    out[attr] = value
+            else:
+                if section not in out:
+                    out[section] = {}
+
+                if value is not None:
+                    out[section][attr] = value
+
+        return out
+
     @classmethod
-    def from_toml(cls, data, config):
+    def from_toml_dict(cls, data, config):
+
         try:
-            return cls(config=config, **data)
+            return cls(config=config, **helpers.flatten(data))
         except TypeError:
             raise exceptions.RepoException('Passed repo\'s data are not valid for creating valid Repo instance!')
 
-    @staticmethod
-    def _cleanup_repo(path):
-        logging.info('Cleaning up path: {}'.format(path))
-        shutil.rmtree(path)
+    @classmethod
+    def bootstrap_repo(cls, config: config_module.Config, name=None, git_repo_url=None, secret=None, ipns_key=None,
+                       ipns_lifetime='24h', pin=None, republish=None, after_publish_bin=None, build_bin=None,
+                       publish_dir=None) -> 'Repo':
+
+        if git_repo_url is None:
+            git_repo_url = inquirer.shortcuts.text('Git URL of the repo', validate=lambda _, x: validate_repo(x))
+
+        if name is None:
+            name = inquirer.shortcuts.text('Name of the new repo', default=get_name_from_url(git_repo_url)).lower()
+        else:
+            name = name.lower()
+
+        if name in config.repos:
+            raise exceptions.RepoException('Repo with this name already exists! (Names are case insensitive!)')
+
+        ipns_key, ipns_addr = bootstrap_ipns(config, name, ipns_key)
+
+        if secret is None:
+            secret = ''.join(
+                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(DEFAULT_LENGTH_OF_SECRET))
+
+        if republish is None:
+            republish = inquirer.shortcuts.confirm('Do you want to periodically republish the IPNS object?',
+                                                   default=True)
+
+        if pin is None:
+            pin = inquirer.shortcuts.confirm('Do you want to pin the published IPFS objects?', default=True)
+
+        if build_bin is None:
+            build_bin = inquirer.shortcuts.text('Path to build binary, if you want to do some pre-processing '
+                                                'before publishing', default='')
+
+        if after_publish_bin is None:
+            after_publish_bin = inquirer.shortcuts.text('Path to after-publish binary, if you want to do some '
+                                                        'actions after publishing', default='')
+
+        if publish_dir is None:
+            publish_dir = inquirer.shortcuts.text('Directory to be published inside the repo. Absolute path related to '
+                                                  'root of the repo', default='/')
+
+        if ipns_key is None and after_publish_bin is None:
+            raise exceptions.RepoException(
+                'You have choose not to use IPNS and you also have not specified any after publish command. '
+                'This does not make sense! What do you want to do with this setting?! I have no idea, so aborting!')
+
+        return cls(config=config, name=name, git_repo_url=git_repo_url, secret=secret, pin=pin, publish_dir=publish_dir,
+                   ipns_key=ipns_key, ipns_addr=ipns_addr, build_bin=build_bin, after_publish_bin=after_publish_bin,
+                   republish=republish, ipns_lifetime=ipns_lifetime)
+
+
+def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None) -> typing.Tuple[str, str]:
+    ipns_addr = None
+    if ipns_key is None:
+        wanna_ipns = inquirer.shortcuts.confirm('Do you want to publish to IPNS?', default=True)
+
+        if wanna_ipns:
+            ipns_key = f'{IPNS_KEYS_NAME_PREFIX}_{name}'
+
+            try:
+                out = config.ipfs.key_gen(ipns_key, IPNS_KEYS_TYPE)
+            except ipfsapi.exceptions.Error:
+                use_existing = inquirer.shortcuts.confirm(f'There is already IPNS key with name \'{ipns_key}\', '
+                                                          f'do you want to use it?', default=True)
+
+                if use_existing:
+                    keys = config.ipfs.key_list()
+                    out = next((x for x in keys['Keys'] if x['Name'] == ipns_key), None)
+
+                    if out is None:
+                        raise exceptions.RepoException('We were not able to generate or fetch the IPNS key')
+                else:
+                    while True:
+                        ipns_key = inquirer.shortcuts.text('Then please provide non-existing name for the IPNS key')
+
+                        try:
+                            out = config.ipfs.key_gen(ipns_key, IPNS_KEYS_TYPE)
+                            break
+                        except ipfsapi.exceptions.Error:
+                            click.echo('There is already existing key with this name!')
+                            continue
+
+            ipns_addr = f'/ipns/{out["Id"]}/'
+    else:
+        keys = config.ipfs.key_list()
+        key_object = next((x for x in keys['Keys'] if x['Name'] == ipns_key), None)
+        if key_object is None:
+            logger.info('The passed IPNS key name \'{}\' was not found, generating new key with this name')
+            key_object = config.ipfs.key_gen(ipns_key, IPNS_KEYS_TYPE)
+
+        ipns_addr = f'/ipns/{key_object["Id"]}/'
+
+    return ipns_key, ipns_addr
