@@ -42,7 +42,7 @@ def cli(ctx, quiet, verbose):
     """
     helpers.setup_logging(-1 if quiet else verbose)
 
-    ctx.obj['config'] = config_module.Config.factory()
+    ctx.obj['config'] = config_module.Config.get_instance()
 
 
 @cli.command(short_help='Add new repo')

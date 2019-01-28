@@ -4,6 +4,8 @@ import os
 import pathlib
 import typing
 
+import click
+import inquirer
 import ipfsapi
 import toml
 
@@ -13,7 +15,6 @@ logger = logging.getLogger('publish.config')
 
 
 class Config:
-
     DEFAULT_CONFIG_PATH = os.path.expanduser('~/.ipfs_publish.toml')
 
     MANDATORY_FIELDS = {
@@ -33,7 +34,8 @@ class Config:
         self.loaded_path = path
         self._ipfs = None
 
-    def _load_data(self, data):  # type: (typing.Dict[str, typing.Any]) -> typing.Tuple[dict, typing.Dict[str, publishing.Repo]]
+    def _load_data(self,
+                   data):  # type: (typing.Dict[str, typing.Any]) -> typing.Tuple[dict, typing.Dict[str, publishing.Repo]]
         self._verify_data(data)
 
         repos: typing.Dict[str, publishing.Repo] = {}
@@ -92,7 +94,7 @@ class Config:
         return self._ipfs
 
     @classmethod
-    def factory(cls, path=None):  # type: (typing.Optional[pathlib.Path]) -> Config
+    def get_instance(cls, path=None):  # type: (typing.Optional[pathlib.Path]) -> Config
         """
         Method that resolves from where the config should be loaded.
 
@@ -113,11 +115,25 @@ class Config:
             else:
                 path = pathlib.Path(cls.DEFAULT_CONFIG_PATH)
 
-                # Default config should exist, if not lets create it.
-                if not path.exists():
-                    logger.info('No default config was found, creating new one!')
-                    path.write_text('')
+        # Default config should exist, if not lets create it.
+        if not path.exists():
+            logger.info(f'Config on the path {path} was not found! Bootstraping it there!')
+            cls.bootstrap(path)
 
         logger.info('Loading and caching config from file: {}'.format(path))
         cls._instance = cls(path)
         return cls._instance
+
+    @classmethod
+    def bootstrap(cls, path):
+        click.echo('Welcome!\nLet\'s bootstrap some basic configureation:')
+        host = inquirer.shortcuts.text('Set web server\'s host', default='localhost')
+        port = int(inquirer.shortcuts.text('Set web server\'s port', default=8080, validate=lambda _, x: str(x).isdigit()))
+
+        ipfs_host = inquirer.shortcuts.text('Set IPFS\'s host', default='localhost')
+        ipfs_port = int(inquirer.shortcuts.text('Set IPFS\'s port', default=5001, validate=lambda _, x: str(x).isdigit()))
+
+        with path.open('w') as f:
+            toml.dump({'host': host, 'port': port, 'ipfs': {'host': ipfs_host, 'port': ipfs_port, }}, f)
+
+        click.echo('Bootstrap successful! Let\'s continue with your original command.\n')

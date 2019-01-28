@@ -19,7 +19,7 @@ async def publish_endpoint(repo_name):
     :param repo_name:
     :return:
     """
-    config = config_module.Config.factory()
+    config = config_module.Config.get_instance()
     if repo_name not in config.repos:
         abort(400)
 
