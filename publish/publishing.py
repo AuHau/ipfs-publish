@@ -98,9 +98,9 @@ class Repo:
     @property
     def webhook_url(self):
         if self.is_github:
-            return f'/publish/{self.name}'
+            return f'{self.config.webhook_base}/publish/{self.name}'
         else:
-            return f'/publish/{self.name}?secret={self.secret}'
+            return f'{self.config.webhook_base}/publish/{self.name}?secret={self.secret}'
 
     def _run_bin(self, cwd, bin):
         os.chdir(cwd)
@@ -143,7 +143,7 @@ class Repo:
 
         logger.info('Updating IPNS name')
         ipfs = self.config.ipfs
-        ipfs.name_publish(self.last_ipfs_addr)
+        ipfs.name_publish(self.last_ipfs_addr, key=self.ipns_key)
         logger.info('IPNS successfully published')
 
     def _clone_repo(self):

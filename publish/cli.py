@@ -65,7 +65,7 @@ def add(ctx, **kwargs):
 
     click.secho('\nSuccessfully added new repo!', fg='green')
 
-    webhook_url = click.style(f'{config["host"]}{new_repo.webhook_url}', fg='yellow')
+    webhook_url = click.style(f'{new_repo.webhook_url}', fg='yellow')
     click.echo(f'Use this URL for you webhook: {webhook_url}')
 
     if new_repo.is_github:
@@ -98,7 +98,23 @@ def show(ctx, name):
     print_attribute('IPNS lifetime', repo.ipns_key)
     print_attribute('IPNS address', repo.ipns_addr)
     print_attribute('Last IPFS address', repo.last_ipfs_addr)
-    print_attribute('Webhook address', f'{config["host"]}{repo.webhook_url}')
+    print_attribute('Webhook address', f'{repo.webhook_url}')
+
+
+@cli.command(short_help='Starts HTTP server')
+@click.option('--port', '-p', type=int, help='Fort number')
+@click.option('--host', '-h', help='Hostname on which the server will listen')
+@click.pass_context
+def server(ctx, host=None, port=None):
+    from publish import http
+    config: config_module.Config = ctx.obj['config']
+    app = http.app
+
+    host = host or config['host'] or 'localhost'
+    port = port or config['port'] or 8080
+
+    logger.info(f'Launching server on {host}:{port}')
+    app.run(host, port)
 
 
 def print_attribute(name, value):
