@@ -25,6 +25,10 @@ def get_name_from_url(url):  # type: (str) -> str
     return re.sub(r'\W', '_', url.replace('https://', ''))
 
 
+def validate_name(name, config):
+    return name.lower() not in config.repos
+
+
 def validate_url(url):
     """
     Attribution goes to Django project.
@@ -221,7 +225,8 @@ class Repo:
             git_repo_url = inquirer.shortcuts.text('Git URL of the repo', validate=lambda _, x: validate_repo(x))
 
         if name is None:
-            name = inquirer.shortcuts.text('Name of the new repo', default=get_name_from_url(git_repo_url)).lower()
+            name = inquirer.shortcuts.text('Name of the new repo', default=get_name_from_url(git_repo_url),
+                                           validate=lambda _, x: validate_name(x, config)).lower()
         else:
             name = name.lower()
 

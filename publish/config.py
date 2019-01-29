@@ -78,7 +78,7 @@ class Config:
 
     @property
     def webhook_base(self):
-        return 'http://{}{}'.format(self['host'], ':' + self['port'] if self['port'] != 80 else '')
+        return 'http://{}{}'.format(self['host'], f':{self["port"]}' if self['port'] != 80 else '')
 
     @property
     def ipfs(self):  # type: () -> ipfsapi.Client
