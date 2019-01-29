@@ -102,15 +102,15 @@ class Repo:
         else:
             return f'{self.config.webhook_base}/publish/{self.name}?secret={self.secret}'
 
-    def _run_bin(self, cwd, bin):
+    def _run_bin(self, cwd, cmd, *args):
         os.chdir(cwd)
 
-        r = subprocess.run(bin, capture_output=True)
+        r = subprocess.run(f'{cmd} {" ".join(args)}', shell=True, capture_output=True)
 
         if r.returncode != 0:
             logger.debug(f'STDERR: {r.stderr.decode("utf-8")}')
             logger.debug(f'STDOUT: {r.stdout.decode("utf-8")}')
-            raise exceptions.RepoException(f'\'{bin}\' binary exited with non-zero code!')
+            raise exceptions.RepoException(f'\'{cmd}\' binary exited with non-zero code!')
 
     def publish_repo(self):
         path = self._clone_repo()
@@ -135,7 +135,7 @@ class Repo:
             self.publish_name()
 
         if self.after_publish_bin is not None:
-            self._run_bin(path, self.after_publish_bin)
+            self._run_bin(path, self.after_publish_bin, self.last_ipfs_addr)
 
         self._cleanup_repo(path)
 
