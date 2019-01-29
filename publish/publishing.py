@@ -125,7 +125,9 @@ class Repo:
             logger.info(f'Unpinning hash: {self.last_ipfs_addr}')
             ipfs.pin_rm(self.last_ipfs_addr)
 
-        result = ipfs.add(str(path), recursive=True, pin=self.pin)
+        publish_dir = path / (self.publish_dir[1:] if self.publish_dir.startswith('/') else self.publish_dir)
+        logger.info(f'Adding directory {publish_dir} to IPFS')
+        result = ipfs.add(str(publish_dir), recursive=True, pin=self.pin)
         self.last_ipfs_addr = f'/ipfs/{result[-1]["Hash"]}/'
         logger.info(f'Repo successfully added to IPFS with hash: {self.last_ipfs_addr}')
 
@@ -213,7 +215,7 @@ class Repo:
     @classmethod
     def bootstrap_repo(cls, config: config_module.Config, name=None, git_repo_url=None, secret=None, ipns_key=None,
                        ipns_lifetime='24h', pin=None, republish=None, after_publish_bin=None, build_bin=None,
-                       publish_dir=None) -> 'Repo':
+                       publish_dir: typing.Optional[str]=None) -> 'Repo':
 
         if git_repo_url is None:
             git_repo_url = inquirer.shortcuts.text('Git URL of the repo', validate=lambda _, x: validate_repo(x))
@@ -248,8 +250,8 @@ class Repo:
                                                         'actions after publishing', default='')
 
         if publish_dir is None:
-            publish_dir = inquirer.shortcuts.text('Directory to be published inside the repo. Absolute path related to '
-                                                  'root of the repo', default='/')
+            publish_dir = inquirer.shortcuts.text('Directory to be published inside the repo. Path related to the root '
+                                                  'of the repo', default='/')
 
         if ipns_key is None and after_publish_bin is None:
             raise exceptions.RepoException(
