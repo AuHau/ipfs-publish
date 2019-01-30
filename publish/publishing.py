@@ -16,7 +16,7 @@ import inquirer
 import ipfsapi
 
 from publish import config as config_module, exceptions, PUBLISH_IGNORE_FILENAME, DEFAULT_LENGTH_OF_SECRET, \
-    IPNS_KEYS_NAME_PREFIX, IPNS_KEYS_TYPE, helpers
+    IPNS_KEYS_NAME_PREFIX, IPNS_KEYS_TYPE, helpers, republisher
 
 logger = logging.getLogger('publish.publishing')
 
@@ -27,6 +27,14 @@ def get_name_from_url(url):  # type: (str) -> str
 
 def validate_name(name, config):
     return name.lower() not in config.repos
+
+
+def validate_lifetime(lifetime):
+    try:
+        republisher.convert_lifetime(lifetime)
+        return True
+    except exceptions.PublishingException:
+        return False
 
 
 def validate_url(url):
@@ -257,6 +265,10 @@ class Repo:
         if publish_dir is None:
             publish_dir = inquirer.shortcuts.text('Directory to be published inside the repo. Path related to the root '
                                                   'of the repo', default='/')
+
+        if not validate_lifetime(ipns_lifetime):
+            raise exceptions.RepoException('Passed lifetime is not valid! Supported units are: h(our), m(inute), '
+                                           's(seconds)!')
 
         if ipns_key is None and after_publish_bin is None:
             raise exceptions.RepoException(

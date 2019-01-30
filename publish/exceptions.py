@@ -9,3 +9,7 @@ class ConfigException(IpfsPublishException):
 
 class RepoException(IpfsPublishException):
     pass
+
+
+class PublishingException(IpfsPublishException):
+    pass
