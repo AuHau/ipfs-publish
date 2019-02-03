@@ -9,7 +9,7 @@ import inquirer
 import ipfsapi
 import toml
 
-from publish import CONFIG_PATH_ENV_NAME, exceptions, publishing
+from publish import CONFIG_PATH_ENV_NAME, exceptions
 
 logger = logging.getLogger('publish.config')
 
@@ -36,6 +36,8 @@ class Config:
 
     def _load_data(self,
                    data):  # type: (typing.Dict[str, typing.Any]) -> typing.Tuple[dict, typing.Dict[str, publishing.Repo]]
+        from publish import publishing
+
         self._verify_data(data)
 
         repos: typing.Dict[str, publishing.Repo] = {}
