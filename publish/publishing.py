@@ -105,7 +105,7 @@ class Repo:
 
     @property
     def is_github(self):
-        return 'github' in self.git_repo_url
+        return 'github' in self.git_repo_url.lower()
 
     @property
     def webhook_url(self):
@@ -120,8 +120,8 @@ class Repo:
         r = subprocess.run(f'{cmd} {" ".join(args)}', shell=True, capture_output=True)
 
         if r.returncode != 0:
-            logger.debug(f'STDERR: {r.stderr.decode("utf-8")}')
-            logger.debug(f'STDOUT: {r.stdout.decode("utf-8")}')
+            r.stderr and logger.debug(f'STDERR: {r.stderr.decode("utf-8")}')
+            r.stdout and logger.debug(f'STDOUT: {r.stdout.decode("utf-8")}')
             raise exceptions.RepoException(f'\'{cmd}\' binary exited with non-zero code!')
 
     def publish_repo(self):
@@ -166,7 +166,7 @@ class Repo:
 
         git.Repo.clone_from(self.git_repo_url, path)
 
-        return pathlib.Path(path)
+        return pathlib.Path(path).resolve()
 
     def _remove_ignored_files(self, path):
         shutil.rmtree(path / '.git')
@@ -182,8 +182,19 @@ class Repo:
         ignore_file.unlink()
 
     def _remove_glob(self, path, glob):
-        for file in path.glob(glob):
-            file.unlink()
+        for path_to_delete in path.glob(glob):
+            path_to_delete = path_to_delete.resolve()
+            if not path_to_delete.exists():
+                continue
+
+            if path not in path_to_delete.parents:
+                pprint(list(path_to_delete.parents))
+                raise exceptions.RepoException(f'Trying to delete file outside the repo temporary directory! {path_to_delete}')
+
+            if path_to_delete.is_file():
+                path_to_delete.unlink()
+            else:
+                shutil.rmtree(str(path_to_delete))
 
     def is_data_signed_correctly(self, data, signature):
         # HMAC requires the key to be bytes, but data is string
