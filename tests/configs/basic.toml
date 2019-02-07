@@ -1,0 +1,6 @@
+host = "localhost"
+port = 8070
+
+[ipfs]
+host = "localhost"
+port = 5001

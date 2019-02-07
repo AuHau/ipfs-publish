@@ -106,7 +106,7 @@ ChangeLog
 .mypy_cache/
 
 # dev configs
-configs
+/configs
 
 # giTrack tracking
 .gitrack
