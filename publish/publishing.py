@@ -1,4 +1,3 @@
-import hmac
 import logging
 import os
 import pathlib
@@ -65,7 +64,28 @@ def validate_repo(url):
     return result.returncode == 0
 
 
-class Repo:
+def is_github_url(url):
+    return 'github' in url.lower()
+
+
+def get_repo_class(url):
+    if is_github_url(url):
+        return GithubRepo
+
+    return GenericRepo
+
+
+def bootstrap_repo(config: config_module.Config, git_repo_url=None, **kwargs):
+    if git_repo_url is None:
+        git_repo_url = inquirer.shortcuts.text('Git URL of the repo', validate=lambda _, x: validate_repo(x))
+
+    if is_github_url(git_repo_url):
+        return GithubRepo.bootstrap_repo(config, git_repo_url=git_repo_url, **kwargs)
+
+    return GenericRepo.bootstrap_repo(config, git_repo_url=git_repo_url, **kwargs)
+
+
+class GenericRepo:
     TOML_MAPPING = {
         'name': None,
         'git_repo_url': None,
@@ -104,15 +124,8 @@ class Repo:
         self.after_publish_bin = after_publish_bin
 
     @property
-    def is_github(self):
-        return 'github' in self.git_repo_url.lower()
-
-    @property
     def webhook_url(self):
-        if self.is_github:
-            return f'{self.config.webhook_base}/publish/{self.name}'
-        else:
-            return f'{self.config.webhook_base}/publish/{self.name}?secret={self.secret}'
+        return f'{self.config.webhook_base}/publish/{self.name}?secret={self.secret}'
 
     def _run_bin(self, cwd, cmd, *args):
         os.chdir(cwd)
@@ -188,22 +201,12 @@ class Repo:
                 continue
 
             if path not in path_to_delete.parents:
-                pprint(list(path_to_delete.parents))
                 raise exceptions.RepoException(f'Trying to delete file outside the repo temporary directory! {path_to_delete}')
 
             if path_to_delete.is_file():
                 path_to_delete.unlink()
             else:
                 shutil.rmtree(str(path_to_delete))
-
-    def is_data_signed_correctly(self, data, signature):
-        # HMAC requires the key to be bytes, but data is string
-        mac = hmac.new(self.secret, msg=data, digestmod='sha1')
-
-        if not hmac.compare_digest(str(mac.hexdigest()), str(signature)):
-            return False
-
-        return True
 
     @staticmethod
     def _cleanup_repo(path):
@@ -237,8 +240,8 @@ class Repo:
 
     @classmethod
     def bootstrap_repo(cls, config: config_module.Config, name=None, git_repo_url=None, secret=None, ipns_key=None,
-                       ipns_lifetime='24h', pin=None, republish=None, after_publish_bin=None, build_bin=None,
-                       publish_dir: typing.Optional[str]=None) -> 'Repo':
+                       ipns_lifetime=None, pin=None, republish=None, after_publish_bin=None, build_bin=None,
+                       publish_dir: typing.Optional[str] = None) -> 'GenericRepo':
 
         if git_repo_url is None:
             git_repo_url = inquirer.shortcuts.text('Git URL of the repo', validate=lambda _, x: validate_repo(x))
@@ -277,6 +280,7 @@ class Repo:
             publish_dir = inquirer.shortcuts.text('Directory to be published inside the repo. Path related to the root '
                                                   'of the repo', default='/')
 
+        ipns_lifetime = ipns_lifetime or '24h'
         if not validate_lifetime(ipns_lifetime):
             raise exceptions.RepoException('Passed lifetime is not valid! Supported units are: h(our), m(inute), '
                                            's(seconds)!')
@@ -333,3 +337,16 @@ def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None
         ipns_addr = f'/ipns/{key_object["Id"]}/'
 
     return ipns_key, ipns_addr
+
+
+class GithubRepo(GenericRepo):
+
+    def __init__(self, git_repo_url, **kwargs):
+        if not is_github_url(git_repo_url):
+            raise exceptions.RepoException('The passed Git repo URL is not related to GitHub!')
+
+        super().__init__(git_repo_url=git_repo_url, **kwargs)
+
+    @property
+    def webhook_url(self):
+        return f'{self.config.webhook_base}/publish/{self.name}'

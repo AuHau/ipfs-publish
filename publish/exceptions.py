@@ -13,3 +13,7 @@ class RepoException(IpfsPublishException):
 
 class PublishingException(IpfsPublishException):
     pass
+
+
+class HttpException(IpfsPublishException):
+    pass

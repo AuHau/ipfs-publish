@@ -24,4 +24,9 @@ class RepoFactory(PublishFactory):
     secret = factory.Faker('pystr', min_chars=20, max_chars=20)
 
     class Meta:
-        model = publishing.Repo
+        model = publishing.GenericRepo
+
+
+class GithubRepoFactory(RepoFactory):
+    class Meta:
+        model = publishing.GithubRepo

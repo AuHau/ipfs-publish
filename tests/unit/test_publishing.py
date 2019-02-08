@@ -8,7 +8,6 @@ import ipfsapi
 import pytest
 
 from publish import publishing, exceptions, PUBLISH_IGNORE_FILENAME
-
 from .. import factories
 
 IGNORE_FILE_TEST_SET = (
@@ -24,13 +23,6 @@ non_existing_file"""
 
 
 class TestRepo:
-    def test_is_github(self):
-        repo: publishing.Repo = factories.RepoFactory(git_repo_url='https://github.com/some/repo')
-        assert repo.is_github is True
-
-        repo.git_repo_url = 'https://gitlab.com/some/repo'
-        assert repo.is_github is False
-
     def test_publish_repo_basic(self, mocker):
         mocker.patch.object(git.Repo, 'clone_from')
         mocker.patch.object(shutil, 'rmtree')
@@ -41,7 +33,7 @@ class TestRepo:
         mocker.patch.object(ipfsapi, 'connect')
         ipfsapi.connect.return_value = ipfs_client_mock
 
-        repo: publishing.Repo = factories.RepoFactory()
+        repo: publishing.GenericRepo = factories.RepoFactory()
         repo.publish_repo()
 
         ipfs_client_mock.add.assert_called_once_with(mocker.ANY, recursive=True, pin=True)
@@ -61,7 +53,7 @@ class TestRepo:
         mocker.patch.object(subprocess, 'run')
         subprocess.run.return_value = subprocess.CompletedProcess(None, 0)
 
-        repo: publishing.Repo = factories.RepoFactory(build_bin='some_cmd', after_publish_bin='some_other_cmd')
+        repo: publishing.GenericRepo = factories.RepoFactory(build_bin='some_cmd', after_publish_bin='some_other_cmd')
         repo.publish_repo()
 
         assert subprocess.run.call_count == 2
@@ -81,7 +73,7 @@ class TestRepo:
         mocker.patch.object(subprocess, 'run')
         subprocess.run.return_value = subprocess.CompletedProcess(None, 1)
 
-        repo: publishing.Repo = factories.RepoFactory(build_bin='some_cmd', after_publish_bin='some_other_cmd')
+        repo: publishing.GenericRepo = factories.RepoFactory(build_bin='some_cmd', after_publish_bin='some_other_cmd')
 
         with pytest.raises(exceptions.RepoException):
             repo.publish_repo()
@@ -96,7 +88,7 @@ class TestRepo:
         mocker.patch.object(ipfsapi, 'connect')
         ipfsapi.connect.return_value = ipfs_client_mock
 
-        repo: publishing.Repo = factories.RepoFactory(last_ipfs_addr='some_hash')
+        repo: publishing.GenericRepo = factories.RepoFactory(last_ipfs_addr='some_hash')
         repo.publish_repo()
 
         ipfs_client_mock.pin_rm.assert_called_once_with('some_hash')
@@ -117,10 +109,10 @@ class TestRepo:
 
         if inspect.isclass(expected_unlink) and issubclass(expected_unlink, Exception):
             with pytest.raises(expected_unlink):
-                repo: publishing.Repo = factories.RepoFactory()
+                repo: publishing.GenericRepo = factories.RepoFactory()
                 repo._remove_ignored_files(tmp_path)
         else:
-            repo: publishing.Repo = factories.RepoFactory()
+            repo: publishing.GenericRepo = factories.RepoFactory()
             repo._remove_ignored_files(tmp_path)
 
             # -1 because the method removes the ignore file on its own
