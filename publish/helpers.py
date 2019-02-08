@@ -5,16 +5,25 @@ import sys
 #######################################################################
 # Logging
 class NoOutput:
-    def write(self):
+    def write(self) -> None:
         pass
 
 
 VERBOSITY_PACKAGES = {
     'urllib3': 5,
 }
+"""
+Dictionary that define thresholds of verbosity for packages.
+If verbosity (eq. number of Vs for CLI command) is bellowed the number, the logging for the package will be ignored.
+"""
 
 
-def setup_logging(verbosity):
+def setup_logging(verbosity: int) -> None:
+    """
+    Setups the logging package based on passed verbosity
+    :param verbosity: Verbosity level
+    :return:
+    """
     if verbosity == -1:
         sys.stdout = NoOutput()
         sys.stderr = NoOutput()

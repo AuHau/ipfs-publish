@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import pathlib
@@ -15,22 +16,80 @@ import inquirer
 import ipfsapi
 
 from publish import config as config_module, exceptions, PUBLISH_IGNORE_FILENAME, DEFAULT_LENGTH_OF_SECRET, \
-    IPNS_KEYS_NAME_PREFIX, IPNS_KEYS_TYPE, helpers, republisher
+    IPNS_KEYS_NAME_PREFIX, IPNS_KEYS_TYPE, helpers
 
 logger = logging.getLogger('publish.publishing')
 
+repo_class = typing.Union[typing.Type['GithubRepo'], typing.Type['GenericRepo']]
+repo_instance = typing.Union['GithubRepo', 'GenericRepo']
 
-def get_name_from_url(url):  # type: (str) -> str
+
+def get_name_from_url(url: str) -> str:
+    """
+    Converts URL into string, with removing https:// and any non-alphabet character with _
+    :param url:
+    :return:
+    """
     return re.sub(r'\W', '_', url.replace('https://', ''))
 
 
-def validate_name(name, config):
+def validate_name(name: str, config: config_module.Config) -> bool:
+    """
+    Validate that name is not already present in the configuration.
+
+    :param name:
+    :param config:
+    :return:
+    """
     return name.lower() not in config.repos
 
 
-def validate_lifetime(lifetime):
+LIFETIME_SYNTAX_REGEX = r'(?:(\d+)(h|m|s)(?!.*\2))'
+"""
+Regex validating lifetime syntax, examples:
+1h -> TRUE
+1M -> TRUE
+1s -> TRUE
+5h2m1s -> TRUE
+1m2m -> FALSE
+1h 2m -> FALSE
+"""
+
+LIFETIME_SYNTAX_CHECK_REGEX = f'^{LIFETIME_SYNTAX_REGEX}+?$'
+LIFETIME_MAPPING = {
+    'h': 'hours',
+    'm': 'minutes',
+    's': 'seconds',
+}
+
+
+def convert_lifetime(value: str) -> datetime.timedelta:
+    """
+    Converts lifetime string into timedelta object
+    :param value:
+    :return:
+    """
+    if re.match(LIFETIME_SYNTAX_CHECK_REGEX, value, re.IGNORECASE) is None:
+        raise exceptions.PublishingException('Unknown lifetime syntax!')
+
+    matches = re.findall(LIFETIME_SYNTAX_REGEX, value, re.IGNORECASE)
+    base = datetime.timedelta()
+    for match in matches:
+        unit = LIFETIME_MAPPING[match[1].lower()]
+
+        base += datetime.timedelta(**{unit: int(match[0])})
+
+    return base
+
+
+def validate_lifetime(lifetime: str):
+    """
+    Function validating lifetime syntax
+    :param lifetime:
+    :return:
+    """
     try:
-        republisher.convert_lifetime(lifetime)
+        convert_lifetime(lifetime)
         return True
     except exceptions.PublishingException:
         return False
@@ -53,7 +112,17 @@ def validate_url(url):
     return re.match(regex, url) is not None
 
 
-def validate_repo(url):
+def validate_repo(url: str) -> bool:
+    """
+    Validate Git repository which is supposed to be placed on passed URL.
+    Validated are two points: validity of the URL and being able to access the Git repo.
+
+    Checking accessibility of the repo is done using `git ls-remote`, hence the repo must not be protected with
+    password.
+
+    :param url:
+    :return:
+    """
     if not validate_url(url):
         return False
 
@@ -64,18 +133,37 @@ def validate_repo(url):
     return result.returncode == 0
 
 
-def is_github_url(url):
+def is_github_url(url: str) -> bool:
+    """
+    Validate if passed URL is GitHub's url.
+
+    :param url:
+    :return:
+    """
     return 'github' in url.lower()
 
 
-def get_repo_class(url):
+def get_repo_class(url: str) -> repo_class:
+    """
+    For Git repo's URL it returns appropriate class that should represents the repo.
+    :param url:
+    :return:
+    """
     if is_github_url(url):
         return GithubRepo
 
     return GenericRepo
 
 
-def bootstrap_repo(config: config_module.Config, git_repo_url=None, **kwargs):
+def bootstrap_repo(config: config_module.Config, git_repo_url=None, **kwargs) -> repo_instance:
+    """
+    Initiate the interactive bootstrap process of creating new Repo's instance
+
+    :param config:
+    :param git_repo_url:
+    :param kwargs:
+    :return:
+    """
     if git_repo_url is None:
         git_repo_url = inquirer.shortcuts.text('Git URL of the repo', validate=lambda _, x: validate_repo(x))
 
@@ -86,7 +174,14 @@ def bootstrap_repo(config: config_module.Config, git_repo_url=None, **kwargs):
 
 
 class GenericRepo:
-    TOML_MAPPING = {
+    """
+    Generic Repo's class that represent and store all information about Git repository that can be placed on any
+    Git's provider.
+
+    It allows to publish repo's content to IPFS and IPNS.
+    """
+
+    _TOML_MAPPING = {
         'name': None,
         'git_repo_url': None,
         'secret': None,
@@ -100,6 +195,66 @@ class GenericRepo:
         'ipns_addr': 'ipns',
         'ipns_lifetime': 'ipns',
     }
+    """
+    Mapping that maps the repo's properties into TOML's config sections.
+    """
+
+    name: str = None
+    """
+    Defines name of repo under which it will be represented in the IPFS Publish name/configuration etc.
+    """
+
+    git_repo_url: str = None
+    """
+    Defines where the Git repo is placed and from where it will be clonned.
+    """
+
+    secret: str = None
+    """
+    Defines random string secret, that is used to secure the webhook calls from attacker who would try to triger publish
+    events on its own.
+    """
+
+    ipns_addr: str = ''
+    """
+    IPNS address in format "/ipns/<hash>", that defines the address where the repo is published.
+    """
+
+    ipns_key: str = ''
+    """
+    Defines name of the key that will be used for publishing IPNS record
+    """
+
+    ipns_lifetime: str = '24h'
+    """
+    Defines the lifetime of IPNS entries
+    """
+
+    pin: bool = True
+    """
+    Defines if the published content is pinned to the IPFS node
+    """
+
+    last_ipfs_addr: typing.Optional[str] = None
+    """
+    Stores the last IPFS address of the published address in format "/ipfs/<hash>/" 
+    """
+
+    publish_dir: str = '/'
+    """
+    Defines a path inside the repo that will be published. Default is the root of the repo.
+    """
+
+    build_bin: typing.Optional[str] = None
+    """
+    Binary that is invoked prior the publishing to IPFS.
+    """
+
+    after_publish_bin: typing.Optional[str] = None
+    """
+    Binary that is invoked after the content of the repo is published to IPFS. The binary gets as argument
+    the IPFS address that it was published under. 
+    """
 
     def __init__(self, config: config_module.Config, name: str, git_repo_url: str, secret: str,
                  ipns_addr: typing.Optional[str] = None, ipns_key: typing.Optional[str] = None, ipns_lifetime='24h',
@@ -124,10 +279,23 @@ class GenericRepo:
         self.after_publish_bin = after_publish_bin
 
     @property
-    def webhook_url(self):
+    def webhook_url(self) -> str:
+        """
+        Returns URL with FQDN for the webhook invocation.
+        :return:
+        """
         return f'{self.config.webhook_base}/publish/{self.name}?secret={self.secret}'
 
-    def _run_bin(self, cwd, cmd, *args):
+    def _run_bin(self, cwd: str, cmd: str, *args):
+        """
+        Execute binary with arguments in specified directory.
+
+        :param cwd: Directory in which the binary will be invoked
+        :param cmd: Binary definition invoked with shell
+        :param args:
+        :raises exceptions.RepoException: If the binary exited with non-zero status
+        :return:
+        """
         os.chdir(cwd)
 
         r = subprocess.run(f'{cmd} {" ".join(args)}', shell=True, capture_output=True)
@@ -137,7 +305,12 @@ class GenericRepo:
             r.stdout and logger.debug(f'STDOUT: {r.stdout.decode("utf-8")}')
             raise exceptions.RepoException(f'\'{cmd}\' binary exited with non-zero code!')
 
-    def publish_repo(self):
+    def publish_repo(self) -> None:
+        """
+        Main method that handles publishing of the repo to IPFS.
+
+        :return:
+        """
         path = self._clone_repo()
 
         if self.build_bin is not None:
@@ -164,7 +337,11 @@ class GenericRepo:
 
         self._cleanup_repo(path)
 
-    def publish_name(self):
+    def publish_name(self) -> None:
+        """
+        Main method that handles publishing of the IPFS addr into IPNS.
+        :return:
+        """
         if self.last_ipfs_addr is None:
             return
 
@@ -173,7 +350,11 @@ class GenericRepo:
         ipfs.name_publish(self.last_ipfs_addr, key=self.ipns_key)
         logger.info('IPNS successfully published')
 
-    def _clone_repo(self):
+    def _clone_repo(self) -> pathlib.Path:
+        """
+        Method that will clone the repo defined by git_repo_url into temporary directory and returns the path.
+        :return: Path to the root of the cloned repo
+        """
         path = tempfile.mkdtemp()
         logger.info(f'Cloning repo: \'{self.git_repo_url}\' to {path}')
 
@@ -181,7 +362,14 @@ class GenericRepo:
 
         return pathlib.Path(path).resolve()
 
-    def _remove_ignored_files(self, path):
+    def _remove_ignored_files(self, path: pathlib.Path):
+        """
+        Reads the ignore file and removes the ignored files based on glob from the directory and all subdirectories.
+        Also removes the ignore file itself and .git folder.
+
+        :param path:
+        :return:
+        """
         shutil.rmtree(path / '.git')
         ignore_file = path / PUBLISH_IGNORE_FILENAME
 
@@ -194,14 +382,22 @@ class GenericRepo:
 
         ignore_file.unlink()
 
-    def _remove_glob(self, path, glob):
+    def _remove_glob(self, path: pathlib.Path, glob: str):
+        """
+        Removes all files from path that matches the glob string.
+
+        :param path:
+        :param glob:
+        :return:
+        """
         for path_to_delete in path.glob(glob):
             path_to_delete = path_to_delete.resolve()
             if not path_to_delete.exists():
                 continue
 
             if path not in path_to_delete.parents:
-                raise exceptions.RepoException(f'Trying to delete file outside the repo temporary directory! {path_to_delete}')
+                raise exceptions.RepoException(
+                    f'Trying to delete file outside the repo temporary directory! {path_to_delete}')
 
             if path_to_delete.is_file():
                 path_to_delete.unlink()
@@ -210,12 +406,22 @@ class GenericRepo:
 
     @staticmethod
     def _cleanup_repo(path):
+        """
+        Removes the cloned repo from path.
+
+        :param path:
+        :return:
+        """
         logging.info(f'Cleaning up path: {path}')
         shutil.rmtree(path)
 
     def to_toml_dict(self) -> dict:
+        """
+        Serialize the instance into dictionary that is saved to TOML config.
+        :return:
+        """
         out = {}
-        for attr, section in self.TOML_MAPPING.items():
+        for attr, section in self._TOML_MAPPING.items():
             value = getattr(self, attr, None)
 
             if section is None:
@@ -231,7 +437,13 @@ class GenericRepo:
         return out
 
     @classmethod
-    def from_toml_dict(cls, data, config):
+    def from_toml_dict(cls, data: dict, config: config_module.Config) -> 'GenericRepo':
+        """
+        Deserialize the passed data dict of TOML config into instance
+        :param data:
+        :param config:
+        :return:
+        """
 
         try:
             return cls(config=config, **helpers.flatten(data))
@@ -239,21 +451,44 @@ class GenericRepo:
             raise exceptions.RepoException('Passed repo\'s data are not valid for creating valid Repo instance!')
 
     @classmethod
+    def bootstrap_property(cls, name: str, category: str, message: str, value: typing.Any = None,
+                           default: typing.Any = None,
+                           validate: typing.Callable = None):
+        if value is not None:
+            if validate is not None and not validate(None, value):
+                raise exceptions.RepoException(f'Invalid {name}: {value}!')
+
+            return value
+
+        return getattr(inquirer.shortcuts, category)(message, validate=validate, default=default)
+
+    @classmethod
     def bootstrap_repo(cls, config: config_module.Config, name=None, git_repo_url=None, secret=None, ipns_key=None,
                        ipns_lifetime=None, pin=None, republish=None, after_publish_bin=None, build_bin=None,
                        publish_dir: typing.Optional[str] = None) -> 'GenericRepo':
+        """
+        Method that interactively bootstraps the repository by asking interactive questions.
 
-        if git_repo_url is None:
-            git_repo_url = inquirer.shortcuts.text('Git URL of the repo', validate=lambda _, x: validate_repo(x))
+        :param config:
+        :param name:
+        :param git_repo_url:
+        :param secret:
+        :param ipns_key:
+        :param ipns_lifetime:
+        :param pin:
+        :param republish:
+        :param after_publish_bin:
+        :param build_bin:
+        :param publish_dir:
+        :return:
+        """
 
-        if name is None:
-            name = inquirer.shortcuts.text('Name of the new repo', default=get_name_from_url(git_repo_url),
-                                           validate=lambda _, x: validate_name(x, config)).lower()
-        else:
-            name = name.lower()
+        git_repo_url = cls.bootstrap_property('Git repo URL', 'text', 'Git URL of the repo', git_repo_url,
+                                              validate=lambda _, x: validate_repo(x))
 
-        if name in config.repos:
-            raise exceptions.RepoException('Repo with this name already exists! (Names are case insensitive!)')
+        name = cls.bootstrap_property('Name', 'text', 'Name of the new repo', name,
+                                      default=get_name_from_url(git_repo_url),
+                                      validate=lambda _, x: validate_name(x, config)).lower()
 
         ipns_key, ipns_addr = bootstrap_ipns(config, name, ipns_key)
 
@@ -261,12 +496,8 @@ class GenericRepo:
             secret = ''.join(
                 secrets.choice(string.ascii_uppercase + string.digits) for _ in range(DEFAULT_LENGTH_OF_SECRET))
 
-        if republish is None:
-            republish = inquirer.shortcuts.confirm('Do you want to periodically republish the IPNS object?',
-                                                   default=True)
-
-        if pin is None:
-            pin = inquirer.shortcuts.confirm('Do you want to pin the published IPFS objects?', default=True)
+        pin = cls.bootstrap_property('Pin flag', 'confirm', 'Do you want to pin the published IPFS objects?', pin,
+                                     default=True)
 
         if build_bin is None:
             build_bin = inquirer.shortcuts.text('Path to build binary, if you want to do some pre-processing '
@@ -296,6 +527,15 @@ class GenericRepo:
 
 
 def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None) -> typing.Tuple[str, str]:
+    """
+    Functions that handle bootstraping of IPNS informations.
+
+    :param config:
+    :param name:
+    :param ipns_key:
+    :return:
+    """
+
     ipns_addr = None
     if ipns_key is None:
         wanna_ipns = inquirer.shortcuts.confirm('Do you want to publish to IPNS?', default=True)
@@ -340,6 +580,9 @@ def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None
 
 
 class GithubRepo(GenericRepo):
+    """
+    Special case of Repo specific to GitHub hosted repos.
+    """
 
     def __init__(self, git_repo_url, **kwargs):
         if not is_github_url(git_repo_url):

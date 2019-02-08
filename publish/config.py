@@ -9,7 +9,7 @@ import inquirer
 import ipfsapi
 import toml
 
-from publish import CONFIG_PATH_ENV_NAME, exceptions
+from publish import ENV_NAME_CONFIG_PATH, exceptions
 
 logger = logging.getLogger('publish.config')
 
@@ -113,8 +113,8 @@ class Config:
             return instance
 
         if path is None:
-            if CONFIG_PATH_ENV_NAME in os.environ:
-                path = pathlib.Path(os.environ[CONFIG_PATH_ENV_NAME])
+            if ENV_NAME_CONFIG_PATH in os.environ:
+                path = pathlib.Path(os.environ[ENV_NAME_CONFIG_PATH])
             else:
                 path = pathlib.Path(cls.DEFAULT_CONFIG_PATH)
 
