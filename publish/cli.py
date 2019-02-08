@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import os
 import sys
 import traceback
@@ -8,7 +7,7 @@ import typing
 import click
 import click_completion
 
-from publish import publishing, exceptions, __version__, helpers, config as config_module, republisher, \
+from publish import publishing, exceptions, __version__, helpers, config as config_module, \
     ENV_NAME_PASS_EXCEPTIONS
 
 logger = logging.getLogger('publish.cli')
@@ -140,11 +139,6 @@ def server(ctx, host=None, port=None):
 
     host = host or config['host'] or 'localhost'
     port = port or config['port'] or 8080
-
-    # Start republishing service
-    logger.info('Starting republish service')
-    p = multiprocessing.Process(target=republisher.start_publishing)
-    p.start()
 
     logger.info(f'Launching server on {host}:{port}')
     app.run(host, port)
