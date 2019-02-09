@@ -286,7 +286,7 @@ class GenericRepo:
         """
         return f'{self.config.webhook_base}/publish/{self.name}?secret={self.secret}'
 
-    def _run_bin(self, cwd: str, cmd: str, *args):
+    def _run_bin(self, cwd: pathlib.Path, cmd: str, *args):
         """
         Execute binary with arguments in specified directory.
 
@@ -296,7 +296,7 @@ class GenericRepo:
         :raises exceptions.RepoException: If the binary exited with non-zero status
         :return:
         """
-        os.chdir(cwd)
+        os.chdir(str(cwd))
 
         r = subprocess.run(f'{cmd} {" ".join(args)}', shell=True, capture_output=True)
 

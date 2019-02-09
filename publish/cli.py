@@ -108,7 +108,11 @@ def show(ctx, name):
     Displays details for repo with NAME, that is passed as argument.
     """
     config: config_module.Config = ctx.obj['config']
-    repo: publishing.GenericRepo = config.repos[name]
+    repo: publishing.GenericRepo = config.repos.get(name)
+
+    if repo is None:
+        click.secho('Unknown repo!', fg='red')
+        exit(1)
 
     click.secho(repo.name, fg='green')
     print_attribute('Git URL', repo.git_repo_url)
@@ -118,6 +122,38 @@ def show(ctx, name):
     print_attribute('IPNS address', repo.ipns_addr)
     print_attribute('Last IPFS address', repo.last_ipfs_addr)
     print_attribute('Webhook address', f'{repo.webhook_url}')
+
+
+@cli.command(short_help='Remove repo')
+@click.option('--keep-pinned', is_flag=True, help='Will not remove the repo\'s content from the IPFS node')
+@click.option('--keep-ipns', is_flag=True, help='Will not remove the IPNS key from the IPFS node')
+@click.argument('name')
+@click.pass_context
+def rm(ctx, name, keep_pinned=False, keep_ipns=False):
+    """
+    Removes the repo from the IPFS Publish.
+
+    It will by default cleanup the resources inside IPFS node. Eq. remove IPNS key and unpin the content. You can keep
+    the resources if you use the specific options, just be aware that keeping the IPNS key, will resolve in continuation
+    of republishing of the IPNS entry. And keeping pinned content will result in still serving the file.
+    """
+    config: config_module.Config = ctx.obj['config']
+    repo: publishing.GenericRepo = config.repos.get(name)
+
+    if repo is None:
+        click.secho('Unknown repo!', fg='red')
+        exit(1)
+
+    if not keep_ipns:
+        config.ipfs.key_rm(repo.ipns_key)
+
+    if not keep_pinned and repo.last_ipfs_addr:
+        config.ipfs.pin_rm(repo.last_ipfs_addr)
+
+    del config.repos[name]
+    config.save()
+
+    click.echo('Repo successfully removed!')
 
 
 @cli.command(short_help='Starts HTTP server')
