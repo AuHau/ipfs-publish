@@ -82,7 +82,7 @@ def convert_lifetime(value: str) -> datetime.timedelta:
     return base
 
 
-def validate_lifetime(lifetime: str):
+def validate_time_span(lifetime: str):
     """
     Function validating lifetime syntax
     :param lifetime:
@@ -259,7 +259,7 @@ class GenericRepo:
     def __init__(self, config: config_module.Config, name: str, git_repo_url: str, secret: str,
                  ipns_addr: typing.Optional[str] = None, ipns_key: typing.Optional[str] = None, ipns_lifetime='24h',
                  republish=False, pin=True, last_ipfs_addr=None, publish_dir: str = '/',
-                 build_bin=None, after_publish_bin=None):
+                 build_bin=None, after_publish_bin=None, ipns_ttl='15m'):
         self.name = name
         self.git_repo_url = git_repo_url
         self.secret = secret
@@ -272,6 +272,7 @@ class GenericRepo:
         self.last_ipfs_addr = last_ipfs_addr
         self.ipns_lifetime = ipns_lifetime
         self.ipns_addr = ipns_addr
+        self.ipns_ttl = ipns_ttl
 
         # Build etc. setting
         self.publish_dir = publish_dir
@@ -347,7 +348,7 @@ class GenericRepo:
 
         logger.info('Updating IPNS name')
         ipfs = self.config.ipfs
-        ipfs.name_publish(self.last_ipfs_addr, key=self.ipns_key)
+        ipfs.name_publish(self.last_ipfs_addr, key=self.ipns_key, ttl=self.ipns_ttl)
         logger.info('IPNS successfully published')
 
     def _clone_repo(self) -> pathlib.Path:
@@ -465,10 +466,11 @@ class GenericRepo:
     @classmethod
     def bootstrap_repo(cls, config: config_module.Config, name=None, git_repo_url=None, secret=None, ipns_key=None,
                        ipns_lifetime=None, pin=None, republish=None, after_publish_bin=None, build_bin=None,
-                       publish_dir: typing.Optional[str] = None) -> 'GenericRepo':
+                       publish_dir: typing.Optional[str] = None, ipns_ttl=None) -> 'GenericRepo':
         """
         Method that interactively bootstraps the repository by asking interactive questions.
 
+        :param ipns_ttl:
         :param config:
         :param name:
         :param git_repo_url:
@@ -512,8 +514,13 @@ class GenericRepo:
                                                   'of the repo', default='/')
 
         ipns_lifetime = ipns_lifetime or '24h'
-        if not validate_lifetime(ipns_lifetime):
+        if not validate_time_span(ipns_lifetime):
             raise exceptions.RepoException('Passed lifetime is not valid! Supported units are: h(our), m(inute), '
+                                           's(seconds)!')
+
+        ipns_ttl = ipns_ttl or '15m'
+        if not validate_time_span(ipns_ttl):
+            raise exceptions.RepoException('Passed ttl is not valid! Supported units are: h(our), m(inute), '
                                            's(seconds)!')
 
         if ipns_key is None and after_publish_bin is None:
@@ -523,7 +530,7 @@ class GenericRepo:
 
         return cls(config=config, name=name, git_repo_url=git_repo_url, secret=secret, pin=pin, publish_dir=publish_dir,
                    ipns_key=ipns_key, ipns_addr=ipns_addr, build_bin=build_bin, after_publish_bin=after_publish_bin,
-                   republish=republish, ipns_lifetime=ipns_lifetime)
+                   republish=republish, ipns_lifetime=ipns_lifetime, ipns_ttl=ipns_ttl)
 
 
 def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None) -> typing.Tuple[str, str]:

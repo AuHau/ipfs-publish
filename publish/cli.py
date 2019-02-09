@@ -33,6 +33,7 @@ def entrypoint(args: typing.Sequence[str], obj: typing.Optional[dict] = None):
         exit(1)
 
 
+# TODO: Add --config to specify path to the config file
 @click.group()
 @click.option('--quiet', '-q', is_flag=True, help="Don't print anything")
 @click.option('--verbose', '-v', count=True, help="Prints additional info. More Vs, more info! (-vvv...)")
@@ -54,7 +55,8 @@ def cli(ctx, quiet, verbose):
 @click.option('--name', '-n', help='Name of the repo')
 @click.option('--url', '-u', 'git_repo_url', help='URL of the Git repo')
 @click.option('--ipns-key', '-k', help='Key name to be used for signing IPNS link')
-@click.option('--ipns-lifetime', '-l', help='For how long IPNS record should be valid (a.k.a. lifetime)')
+@click.option('--ipns-lifetime', '-l', help='For how long IPNS record should be valid (a.k.a. lifetime). Default: 24h')
+@click.option('--ipns-ttl', '-t', help='For how long IPNS record should be cached (a.k.a. ttl). Default: 15m')
 @click.option('--pin/--no-pin', default=True, help='Whether the files added to IPFS should be pinned. Default: True')
 @click.option('--republish/--no-republish', default=True, help='Whether the IPNS record should be periodically '
                                                                'republished. Default: True')
