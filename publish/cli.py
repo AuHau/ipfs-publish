@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import sys
 import traceback
 import typing
@@ -37,18 +38,22 @@ def entrypoint(args: typing.Sequence[str], obj: typing.Optional[dict] = None):
 @click.group()
 @click.option('--quiet', '-q', is_flag=True, help="Don't print anything")
 @click.option('--verbose', '-v', count=True, help="Prints additional info. More Vs, more info! (-vvv...)")
+@click.option('--config', '-c', type=click.Path(dir_okay=False), help="Path to specific config file")
 @click.version_option(__version__)
 @click.pass_context
-def cli(ctx, quiet, verbose):
+def cli(ctx, quiet, verbose, config):
     """
     Management interface for ipfs_publish, that allows adding/listing/removing supported repos.
 
     Currently only public repositories are allowed. There is support for generic Git provider, that has to have at least
-    support for webhooks. There is also specific implementation
+    support for webhooks. There is also specific implementation for GitHub provider as it can sign the webhook's request
+    with secret.
+
+    The tool ships with HTTP server, that needs to be running to accept the webhook's calls.
     """
     helpers.setup_logging(-1 if quiet else verbose)
 
-    ctx.obj['config'] = config_module.Config.get_instance()
+    ctx.obj['config'] = config_module.Config.get_instance(pathlib.Path(config) if config else None)
 
 
 @cli.command(short_help='Add new repo')
