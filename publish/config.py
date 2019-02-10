@@ -129,7 +129,7 @@ class Config:
 
     @classmethod
     def bootstrap(cls, path):
-        click.echo('Welcome!\nLet\'s bootstrap some basic configureation:')
+        click.echo('Welcome!\nLet\'s bootstrap some basic configuration:')
         host = inquirer.shortcuts.text('Set web server\'s host', default='localhost')
         port = int(inquirer.shortcuts.text('Set web server\'s port', default=8080, validate=lambda _, x: str(x).isdigit()))
 
