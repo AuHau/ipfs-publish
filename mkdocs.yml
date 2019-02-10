@@ -14,6 +14,9 @@ theme:
   logo:
     icon: 'power_settings_new'
 
+extra_css:
+  - 'stylesheets/one-page.css'
+
 markdown_extensions:
   - admonition
   - codehilite:
@@ -26,4 +29,4 @@ google_analytics:
   - auto
 
 nav:
-  - About: 'index.md'
+  - Home: 'index.md'
