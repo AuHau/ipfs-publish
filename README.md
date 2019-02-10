@@ -5,16 +5,13 @@
 ## About
 
 This is a tool that aims to enable automatic publishing of static webpages from Git repositories into IPFS. 
-It consists of three parts: small web server, republishing service and management CLI.
+It consists of two parts: small web server and management CLI.
 
 Web server exposes an endpoint which you use as your Git's webhook. When the hook is invoked, it clones
 your repo, build it (if needed), add it to the IPFS node (pin it if configured) and publish the new IPFS address
 under configured IPNS name.
 
-Republishing service is in place to overcome IPNS limitation, where its entry's lifetime is limited.
-Hence it will periodically refresh this entry.
-
-Lastly CLI is in place to manage the repos.
+CLI is in place to manage the repos.
 
 ### Features
 
@@ -22,7 +19,6 @@ Lastly CLI is in place to manage the repos.
 * Publish directory - you can publish only specific sub-directory inside the repo
 * Build script - before adding to IPFS you can run script/binary inside the cloned repo
 * After publish script - after the publishing to IPFS, this script is run with argument of the created IPFS address
-* IPNS republishing
 
 ### Git providers
 
@@ -42,18 +38,26 @@ isolated from rest of your machine!**
 
 * Python 3.7 and higher
 * Git
-* go-ipfs
+* go-ipfs daemon
 * UNIX-Like machine with public IP
 
-**TBD**
+### pip
+
+You can install ipfs-publish directly on your machine using `pip`:
+
+```shell
+$ pip install ipfs-publish
+```
+
+Then you can use the command `ipfs-publish` to manage your repos and/or start the webhook's server.
+
+### Docker
+
+TBD
 
 ## Usage
 
 ```shell
-# Starts HTTP server & IPNS republishing service
-$ ipfs-publish server &
-Running on http://localhost:8080 (CTRL + C to quit)
-
 # Add new repo
 $ ipfs-publish add
 [?] Git URL of the repo: https://github.com/auhau/auhau.github.io
@@ -72,7 +76,7 @@ Your IPNS address: /ipns/QmRTqaW3AJJXmKyiNT7MqqZ4VjGtNNxPyTkgo3Q7pmoCeX/
 $ ipfs-publish list
 github_com_auhau_auhau_github_io
 
-# Show curretn repo
+# Show details of repo
 $ ipfs-publish show github_com_auhau_auhau_github_io
 github_com_auhau_auhau_github_io
 Git URL: https://github.com/auhau/auhau.github.io
@@ -82,6 +86,10 @@ IPNS lifetime: 24h
 IPNS address: /ipns/QmRTqaW3AJJXmKyiNT7MqqZ4VjGtNNxPyTkgo3Q7pmoCeX/
 Last IPFS address: None
 Webhook address: http://localhost:8080/publish/github_com_auhau_auhau_github_io
+
+# Starts HTTP server & IPNS republishing service
+$ ipfs-publish server &
+Running on http://localhost:8080 (CTRL + C to quit)
 ```
 
 ## Contributing

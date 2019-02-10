@@ -126,6 +126,7 @@ def show(ctx, name):
     print_attribute('Secret', repo.secret)
     print_attribute('IPNS key', repo.ipns_key)
     print_attribute('IPNS lifetime', repo.ipns_lifetime)
+    print_attribute('IPNS ttl', repo.ipns_ttl)
     print_attribute('IPNS address', repo.ipns_addr)
     print_attribute('Last IPFS address', repo.last_ipfs_addr)
     print_attribute('Webhook address', f'{repo.webhook_url}')
