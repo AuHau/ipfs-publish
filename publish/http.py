@@ -80,13 +80,12 @@ class GithubHandler(GenericHandler):
     """
 
     def __init__(self, repo: publishing.GithubRepo):
-        super(GithubHandler, self).__init__(repo)
+        super().__init__(repo)
 
     def is_data_signed_correctly(self, data, signature) -> bool:
         # HMAC requires the key to be bytes, but data is string
-        mac = hmac.new(self.repo.secret.encode('utf8'), msg=data, digestmod='sha1')
-
-        if not hmac.compare_digest(str(mac.hexdigest()), str(signature)):
+        mac = hmac.new(self.repo.secret.encode('utf-8'), msg=data, digestmod='sha1')
+        if not hmac.compare_digest(str(mac.hexdigest()), signature):
             return False
 
         return True
@@ -102,7 +101,7 @@ class GithubHandler(GenericHandler):
             logger.warning(f'Request for GitHub repo \'{self.repo.name}\' was not signed with SHA1 function!')
             abort(501)
 
-        if not self.is_data_signed_correctly(req.data, signature):
+        if not self.is_data_signed_correctly(await req.data, signature):
             logger.warning(f'Request for GitHub repo \'{self.repo.name}\' did not have valid signature!')
             abort(403)
 

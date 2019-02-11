@@ -30,7 +30,7 @@ def get_name_from_url(url: str) -> str:
     :param url:
     :return:
     """
-    return re.sub(r'\W', '_', url.replace('https://', ''))
+    return re.sub(r'\W', '_', url.replace('https://', '')).lower()
 
 
 def validate_name(name: str, config: config_module.Config) -> bool:
