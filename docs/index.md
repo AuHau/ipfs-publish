@@ -107,6 +107,12 @@ $ ipfs-publish server &
 Running on http://localhost:8080 (CTRL + C to quit)
 ```
 
+### Environment variables overview
+
+* `IPFS_PUBLISH_VERBOSITY` (int) - specifies verbosity level, same like the `-vvv` option.
+* `IPFS_PUBLISH_EXCEPTIONS` (bool) - if `True` then any exceptions raised are not handled by the CLI (mostly for testing).
+* `IPFS_PUBLISH_CONFIG` (str) - path to where the config file will be looked for.
+
 ### Publishing flow
 
 When repo is being published it follows these steps:

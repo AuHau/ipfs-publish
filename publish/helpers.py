@@ -1,9 +1,12 @@
 import logging
+import os
 import sys
-
 
 #######################################################################
 # Logging
+from publish import ENV_NAME_VERBOSITY_LEVEL, exceptions
+
+
 class NoOutput:
     def write(self) -> None:
         pass
@@ -24,6 +27,12 @@ def setup_logging(verbosity: int) -> None:
     :param verbosity: Verbosity level
     :return:
     """
+    if ENV_NAME_VERBOSITY_LEVEL in os.environ:
+        try:
+            verbosity = max(verbosity, int(os.environ[ENV_NAME_VERBOSITY_LEVEL]))
+        except ValueError:
+            raise exceptions.IpfsPublishException(f'The env. variable {ENV_NAME_VERBOSITY_LEVEL} has to hold integer!')
+
     if verbosity == -1:
         sys.stdout = NoOutput()
         sys.stderr = NoOutput()

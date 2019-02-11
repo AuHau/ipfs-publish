@@ -26,7 +26,7 @@ def entrypoint(args: typing.Sequence[str], obj: typing.Optional[dict] = None):
         logger.debug(traceback.format_exc())
         exit(1)
     except Exception as e:
-        if os.environ.get(ENV_NAME_PASS_EXCEPTIONS) == '1':
+        if os.environ.get(ENV_NAME_PASS_EXCEPTIONS) == 'True':
             raise
 
         logger.error(str(e).strip())

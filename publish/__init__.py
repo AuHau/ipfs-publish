@@ -13,6 +13,11 @@ ENV_NAME_CONFIG_PATH: str = 'IPFS_PUBLISH_CONFIG'
 Name of environmental variable that holds path to the toml config that should be used.
 """
 
+ENV_NAME_VERBOSITY_LEVEL: str = 'IPFS_PUBLISH_VERBOSITY'
+"""
+Name of environmental variable that can increase the level of logging verbosity.
+"""
+
 ENV_NAME_PASS_EXCEPTIONS: str = 'IPFS_PUBLISH_EXCEPTIONS'
 """
 Name of environmental variable that disable catching of Exceptions for CLI commands 
