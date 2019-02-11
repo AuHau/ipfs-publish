@@ -24,7 +24,7 @@
         top: 0;
         left: -24.2rem;
         width: 24.2rem;
-        height: 100%;
+        height: 100% !important;
         -webkit-transform: translateX(0);
         transform: translateX(0);
         transition: box-shadow .25s, -webkit-transform .25s cubic-bezier(.4, 0, .2, 1);
