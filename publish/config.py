@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import pathlib
+import pprint
 import typing
 
 import click
@@ -9,7 +10,7 @@ import inquirer
 import ipfsapi
 import toml
 
-from publish import ENV_NAME_CONFIG_PATH, exceptions
+from publish import ENV_NAME_CONFIG_PATH, exceptions, ENV_NAME_IPFS_HOST, ENV_NAME_IPFS_PORT
 
 logger = logging.getLogger('publish.config')
 
@@ -18,10 +19,8 @@ class Config:
     DEFAULT_CONFIG_PATH = os.path.expanduser('~/.ipfs_publish.toml')
 
     MANDATORY_FIELDS = {
-        'ipfs': {
-            'host',
-            'port',
-        },
+        'host',
+        'port',
     }
 
     def __init__(self, path):  # type: (pathlib.Path) -> None
@@ -29,6 +28,7 @@ class Config:
             raise exceptions.ConfigException('The config was not found on this path! {}'.format(path))
 
         data = toml.load(path)
+        logger.debug(f'Loaded configuration:\n{pprint.pformat(data)}')
         self.data, self.repos = self._load_data(data)
 
         self.loaded_path = path
@@ -86,10 +86,12 @@ class Config:
     @property
     def ipfs(self):  # type: () -> ipfsapi.Client
         if self._ipfs is None:
-            host = port = None
             if self['ipfs'] is not None:
-                host = self['ipfs']['host']
-                port = self['ipfs']['port']
+                host = self['ipfs'].get('host') or os.environ.get(ENV_NAME_IPFS_HOST)
+                port = self['ipfs'].get('port') or os.environ.get(ENV_NAME_IPFS_PORT)
+            else:
+                host = os.environ.get(ENV_NAME_IPFS_HOST)
+                port = os.environ.get(ENV_NAME_IPFS_PORT)
 
             logger.info('Connecting and caching to IPFS host \'{}\' on port {}'.format(host, port))
             self._ipfs = ipfsapi.connect(host, port)
@@ -120,7 +122,7 @@ class Config:
 
         # Default config should exist, if not lets create it.
         if not path.exists():
-            logger.info(f'Config on the path {path} was not found! Bootstraping it there!')
+            logger.info(f'Config on the path {path} was not found! Bootstrapping it there!')
             cls.bootstrap(path)
 
         logger.info('Loading and caching config from file: {}'.format(path))

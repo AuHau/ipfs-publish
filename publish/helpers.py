@@ -13,7 +13,8 @@ class NoOutput:
 
 
 VERBOSITY_PACKAGES = {
-    'urllib3': 5,
+    'urllib3': 4,
+    'asyncio': 5,
 }
 """
 Dictionary that define thresholds of verbosity for packages.
@@ -47,12 +48,11 @@ def setup_logging(verbosity: int) -> None:
 
     logging.basicConfig(stream=sys.stderr, level=logging_level)
 
-    if verbosity > 2:
-        for package, threshold_verbosity in VERBOSITY_PACKAGES.items():
-            if verbosity >= threshold_verbosity:
-                logging.getLogger(package).setLevel(logging.DEBUG)
-            else:
-                logging.getLogger(package).setLevel(logging.ERROR)
+    for package, threshold_verbosity in VERBOSITY_PACKAGES.items():
+        if verbosity >= threshold_verbosity:
+            logging.getLogger(package).setLevel(logging.DEBUG)
+        else:
+            logging.getLogger(package).setLevel(logging.ERROR)
 
 
 #######################################################################

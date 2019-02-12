@@ -20,6 +20,13 @@ CLI is in place to manage the repos.
 * go-ipfs daemon
 * UNIX-Like machine with public IP
 
+!!! warning 'Web server warning'
+    This tool is shipped with a basic web server that is mainly meant for a development environment 
+    and is a single-threaded based, hence it is not meant for heavy load. As I am not expecting 
+    that this tool would scale big it should be sufficient to use. If you would have the need you can 
+    deploy it with some production-scale webserver that supports the `ASGI` protocol. The `ASGI` app
+    can be found in `publish.http:app` package.
+
 ### pip
 
 You can install ipfs-publish directly on your machine using `pip`:
@@ -112,6 +119,8 @@ Running on http://localhost:8080 (CTRL + C to quit)
 * `IPFS_PUBLISH_VERBOSITY` (int) - specifies verbosity level, same like the `-vvv` option.
 * `IPFS_PUBLISH_EXCEPTIONS` (bool) - if `True` then any exceptions raised are not handled by the CLI (mostly for testing).
 * `IPFS_PUBLISH_CONFIG` (str) - path to where the config file will be looked for.
+* `IPFS_PUBLISH_IPFS_HOST` (str) - hostname where IPFS HTTP API will connect to.
+* `IPFS_PUBLISH_IPFS_PORT` (int) - port which will be used for IPFS HTTP API connection.
 
 ### Publishing flow
 
