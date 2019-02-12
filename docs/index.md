@@ -83,6 +83,7 @@ For available CLI commands see the `--help` page. Basic overview of usage of the
 $ ipfs-publish add
 [?] Git URL of the repo: https://github.com/auhau/auhau.github.io
 [?] Name of the new repo: github_com_auhau_auhau_github_io
+[?] Do you want to check-out specific branch?: <default-branch>
 [?] Do you want to publish to IPNS? (Y/n):
 [?] Path to build binary, if you want to do some pre-processing before publishing:
 [?] Path to after-publish binary, if you want to do some actions after publishing:
@@ -176,3 +177,13 @@ after_publish_bin = "update-dns.sh"
 
 ipfs-publish enables you to publish only part of the repo, by specifying the `publish_dir` parameter. This can be used
 together with the building binary to publish only the build site sub-folder.
+
+### Specific branch to publish
+
+You can configure specific branch in your Git repo that should be published. You can do so during adding adding the 
+repo, or later on adding `branch=<name>` to the config:
+
+```toml
+[repos.github_com_auhau_auhau_github_io]
+branch = "gh-pages"
+```

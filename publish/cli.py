@@ -59,6 +59,7 @@ def cli(ctx, quiet, verbose, config):
 @cli.command(short_help='Add new repo')
 @click.option('--name', '-n', help='Name of the repo')
 @click.option('--url', '-u', 'git_repo_url', help='URL of the Git repo')
+@click.option('--branch', '-r', help='Git branch which should be checked out. Default: default branch')
 @click.option('--ipns-key', '-k', help='Key name to be used for signing IPNS link')
 @click.option('--ipns-lifetime', '-l', help='For how long IPNS record should be valid (a.k.a. lifetime). Default: 24h')
 @click.option('--ipns-ttl', '-t', help='For how long IPNS record should be cached (a.k.a. ttl). Default: 15m')

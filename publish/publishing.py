@@ -23,6 +23,8 @@ logger = logging.getLogger('publish.publishing')
 repo_class = typing.Union[typing.Type['GithubRepo'], typing.Type['GenericRepo']]
 repo_instance = typing.Union['GithubRepo', 'GenericRepo']
 
+DEFAULT_BRANCH_PLACEHOLDER = '<default branch>'
+
 
 def get_name_from_url(url: str) -> str:
     """
@@ -128,9 +130,36 @@ def validate_repo(url: str) -> bool:
 
     result = subprocess.run('git -c core.askpass=\'echo\' ls-remote ' + url, shell=True, capture_output=True)
     if result.returncode != 0:
-        print('\nError! ' + result.stderr.decode('utf-8'))
+        logger.error(f'Error while fetching Git\'s remote refs! {result.stderr.decode("utf-8")}')
 
     return result.returncode == 0
+
+
+def validate_branch(git_url: str, name: str) -> bool:
+    """
+    Validate that branch name exists in the Git repository defined by git_url.
+
+    :param git_url:
+    :param name:
+    :return:
+    """
+    if name == DEFAULT_BRANCH_PLACEHOLDER:
+        return True
+
+    result = subprocess.run('git -c core.askpass=\'echo\' ls-remote ' + git_url, shell=True, capture_output=True)
+    if result.returncode != 0:
+        raise exceptions.RepoException(f'Error while fetching Git\'s remote refs! {result.stderr.decode("utf-8")}')
+
+    refs_list = result.stdout.decode("utf-8").split('\n')
+    regex = re.compile(r'refs/heads/(.*)')
+
+    for entry in refs_list:
+        match = regex.search(entry)
+
+        if match is not None and match.group(1) == name:
+            return True
+
+    return False
 
 
 def is_github_url(url: str) -> bool:
@@ -184,6 +213,7 @@ class GenericRepo:
     _TOML_MAPPING = {
         'name': None,
         'git_repo_url': None,
+        'branch': None,
         'secret': None,
         'publish_dir': None,
         'last_ipfs_addr': None,
@@ -207,6 +237,11 @@ class GenericRepo:
     git_repo_url: str = None
     """
     Defines where the Git repo is placed and from where it will be clonned.
+    """
+
+    branch: typing.Optional[str] = None
+    """
+    Defines what branch should be checked out.
     """
 
     secret: str = None
@@ -257,11 +292,13 @@ class GenericRepo:
     """
 
     def __init__(self, config: config_module.Config, name: str, git_repo_url: str, secret: str,
+                 branch: typing.Optional[str] = None,
                  ipns_addr: typing.Optional[str] = None, ipns_key: typing.Optional[str] = None, ipns_lifetime='24h',
                  republish=False, pin=True, last_ipfs_addr=None, publish_dir: str = '/',
                  build_bin=None, after_publish_bin=None, ipns_ttl='15m'):
         self.name = name
         self.git_repo_url = git_repo_url
+        self.branch = branch
         self.secret = secret
         self.config = config
 
@@ -359,7 +396,10 @@ class GenericRepo:
         path = tempfile.mkdtemp()
         logger.info(f'Cloning repo: \'{self.git_repo_url}\' to {path}')
 
-        git.Repo.clone_from(self.git_repo_url, path)
+        if self.branch:
+            git.Repo.clone_from(self.git_repo_url, path, branch=self.branch)
+        else:
+            git.Repo.clone_from(self.git_repo_url, path)
 
         return pathlib.Path(path).resolve()
 
@@ -464,9 +504,9 @@ class GenericRepo:
         return getattr(inquirer.shortcuts, category)(message, validate=validate, default=default)
 
     @classmethod
-    def bootstrap_repo(cls, config: config_module.Config, name=None, git_repo_url=None, secret=None, ipns_key=None,
-                       ipns_lifetime=None, pin=None, republish=None, after_publish_bin=None, build_bin=None,
-                       publish_dir: typing.Optional[str] = None, ipns_ttl=None) -> 'GenericRepo':
+    def bootstrap_repo(cls, config: config_module.Config, name=None, git_repo_url=None, branch=None, secret=None,
+                       ipns_key=None, ipns_lifetime=None, pin=None, republish=None, after_publish_bin=None,
+                       build_bin=None, publish_dir: typing.Optional[str] = None, ipns_ttl=None) -> 'GenericRepo':
         """
         Method that interactively bootstraps the repository by asking interactive questions.
 
@@ -474,6 +514,7 @@ class GenericRepo:
         :param config:
         :param name:
         :param git_repo_url:
+        :param branch:
         :param secret:
         :param ipns_key:
         :param ipns_lifetime:
@@ -491,6 +532,12 @@ class GenericRepo:
         name = cls.bootstrap_property('Name', 'text', 'Name of the new repo', name,
                                       default=get_name_from_url(git_repo_url),
                                       validate=lambda _, x: validate_name(x, config)).lower()
+
+        branch = cls.bootstrap_property('Branch name', 'text', 'Do you want to check-out specific branch?', branch,
+                                        default=DEFAULT_BRANCH_PLACEHOLDER,
+                                        validate=lambda _, x: validate_branch(git_repo_url, x))
+        if branch == DEFAULT_BRANCH_PLACEHOLDER:
+            branch = None
 
         ipns_key, ipns_addr = bootstrap_ipns(config, name, ipns_key)
 
@@ -528,7 +575,8 @@ class GenericRepo:
                 'You have choose not to use IPNS and you also have not specified any after publish command. '
                 'This does not make sense! What do you want to do with this setting?! I have no idea, so aborting!')
 
-        return cls(config=config, name=name, git_repo_url=git_repo_url, secret=secret, pin=pin, publish_dir=publish_dir,
+        return cls(config=config, name=name, git_repo_url=git_repo_url, branch=branch, secret=secret, pin=pin,
+                   publish_dir=publish_dir,
                    ipns_key=ipns_key, ipns_addr=ipns_addr, build_bin=build_bin, after_publish_bin=after_publish_bin,
                    republish=republish, ipns_lifetime=ipns_lifetime, ipns_ttl=ipns_ttl)
 
