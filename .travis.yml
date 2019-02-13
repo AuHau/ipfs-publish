@@ -1,0 +1,80 @@
+stages:
+  - name: test
+  - name: deploy-docker
+    if: tag IS present
+  - name: deploy-pip
+    if: tag IS present
+  - name: deploy-mkdocs
+    if: tag IS present
+  - name: deploy-release
+    if: tag IS present
+
+jobs:
+  include:
+    - stage: test
+      name: "Tests"
+      language: python
+      python:
+        - '3.7'
+      dist: xenial
+      sudo: true
+      install:
+        - pip install -r test-requirements.txt
+        - pip install codecov
+      script:
+        - pytest --cov publish
+      after_success:
+        - codecov
+    - stage: deploy-pip
+      name: "Publish to PyPi"
+      language: python
+      python: '3.7'
+      dist: xenial
+      sudo: true
+      script:
+        - pip install -r test-requirements.txt
+      deploy:
+        provider: pypi
+        user: AuHau-deploy
+        distributions: sdist bdist_wheel
+        skip_existing: true
+        on:
+          tags: true
+          repo: AuHau/ipfs-publish
+        password:
+          secure: TG0Pe/gk6S5jtxoFXpFHqFD86MoDZjAaJxzRx1yroZVhWATEvwfR7KmVCY5HMjAg4hQvlHZV2r22MOPrEDo9lJuJ8Lz/07CQsebMprJ5WIYM/Gbhhs/3Ow93Pd0CMoRokDgCWiy4YSm5YFDRkTmN5DYDrIIasN0b4wsvfYMy1kZAZsoqWGLqjOU7hfsOqKBzmYVIcotKPlYDu7nyqKICiD418Xj3DL6f2bKaYQJ14zLijnh4XEGQeiOW4X5ltFrkQdhZjQ2es7tr4ByyBumcoqcW2VKftGjCl8T0EgWeUjY6szpPIDGiX3xMOHSjMnGJP0EWuo089B/LZN3cB195GqLCuHB1476yZefNo21jTrTAxprlfBHPyqhq6s5tqjW/Xz7k/4AKuI/h1qDXFWevyHvrLpV0x3ok7/9dmEX/D+mejwtXdTvOuFOJaCsP4HDjXyI+iUFsxpo5PnfKLZ3yKavI5am229SeUzkiX0xzRaYmPjN5IITTPwoqCrspKJhWmeQHUve983D+twvF28CocaGGI+u1H3IJ8E0z+JV5QebC/lJ9at8nU+bpUjkIlkv/JCpZh2EcZ4bdxohYlVvl6ZpQ9UaivBWk8A0pY1tmnPDdSScNlWMKqme2kokQDDXy58UapOIHrxnnXPVSjPP6loW9Vxgp9scx4YCnWtaLVr8=
+
+    - stage: deploy-docker
+      name: "Publish to Docker Hub"
+      services:
+        - 'docker'
+      script: docker build -t auhau/ipfs-publish:latest -t auhau/ipfs-publish:$TRAVIS_TAG .
+      deploy:
+        provider: script
+        script:  echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin && docker push auhau/ipfs-publish:latest && docker push auhau/ipfs-publish:$TRAVIS_TAG
+        on:
+          tags: true
+          repo: AuHau/ipfs-publish
+    - stage: deploy-mkdocs
+      name: "Publish documentation"
+      language: python
+      python: '3.7'
+      dist: xenial
+      sudo: true
+      install:
+        - pip install -r test-requirements.txt
+      script:
+        - git config user.name "Adam Uhlir";
+        - git config user.email "hello@adam-uhlir.me";
+        - git remote add gh-token "https://${GH_TOKEN}@github.com/AuHau/ipfs-publish.git";
+        - git fetch gh-token && git fetch gh-token gh-pages:gh-pages;
+        - mkdocs gh-deploy -v --clean --remote-name gh-token;
+    - stage: deploy-release
+      name: "Create draft release"
+      deploy:
+        provider: releases
+        api_key: ${GH_TOKEN}
+        draft: true
+        on:
+          tags: true
+          repo: AuHau/giTrack
