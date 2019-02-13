@@ -1,5 +1,7 @@
 # Welcome to IPFS Publish!
 
+![Git+IPFS=Love](./assets/love.png)
+
 ## About
 
 This is a tool that aims to enable automatic publishing of static webpages from Git repositories into IPFS. 
