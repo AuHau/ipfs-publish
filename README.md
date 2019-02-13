@@ -1,5 +1,15 @@
 # IPFS Publish
 
+![Git+IPFS=Love](https://raw.githubusercontent.com/AuHau/ipfs-publish/master/docs/assets/love.png)
+
+[![PyPI version](https://badge.fury.io/py/ipfs-publish.svg)](https://badge.fury.io/py/ipfs-publish) 
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ipfs-publish.svg)](https://pypi.org/project/ipfs-publish)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/ipfs-publish.svg)](https://pypi.org/project/ipfs-publish/) 
+[![codecov](https://codecov.io/gh/AuHau/ipfs-publish/branch/master/graph/badge.svg)](https://codecov.io/gh/AuHau/ipfs-publish) 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/fd28ce2a500a4b1fab6f9a0a40e2fa80)](https://app.codacy.com/app/AuHau/ipfs-publish)
+[![Updates](https://pyup.io/repos/github/AuHau/ipfs-publish/shield.svg)](https://pyup.io/repos/github/AuHau/ipfs-publish/)
+
+
 > Continuous Delivery of static websites from Git to IPFS
 
 ## About
