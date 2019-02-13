@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  ipfs:
+    image: ipfs/go-ipfs:v0.4.18
+    volumes:
+      - /data/ipfs
+  ipfs-publish:
+    image: ipfs-publish
+    build:
+      context: .
+      args:
+        IPFS_PUBLISH_CONFIG: /data/ipfs_publish/config.toml
+    environment:
+      IPFS_PUBLISH_CONFIG: /data/ipfs_publish/config.toml
+      IPFS_PUBLISH_VERBOSITY: 3
+      IPFS_PUBLISH_IPFS_HOST: ipfs
+      IPFS_PUBLISH_IPFS_PORT: 5001
+    volumes:
+      - /data/ipfs_publish
+    depends_on:
+      - ipfs
+    ports:
+      - 8080:8000

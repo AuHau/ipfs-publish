@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  ipfs-publish:
+    environment:
+      QUART_APP: publish.http:app
+      QUART_ENV: development
+#    command: '/data/.local/bin/quart run'
+    volumes:
+      - ./:/app

@@ -60,9 +60,67 @@ Then you can use the command `ipfs-publish` to manage your repos and/or start th
     
 ### Docker
 
-TBD
+If you plan to let some other users to use your ipfs-publish instance, then it might be good idea to run it inside
+Docker, for at least some level isolation from rest of your system. **But it is bit more complicated to setup.**
 
+There is automatically build official Docker image: `auhau/ipfs-publish`. The image exposes port 8080, under which the 
+webhook server is listening for incoming connections. And volume on path `/data/ipfs_publish/` to persist the configuration. 
+This image does not have IPFS daemon, therefore you have to provide connectivity to the daemon of your choice. 
 
+!!! info "go-ipfs verion"
+    ipfs-publish is tested with go-ipfs version **v0.4.18**, using different versions might result in unexpected behaviour!
+
+Easiest way to deploy ipfs-publish is using `docker-compose`, together with `go-ipfs` as container. 
+You can use this YAML configuration for it:
+
+```yaml
+version: '3'
+
+services:
+  ipfs:
+    image: ipfs/go-ipfs:v0.4.18
+    volumes:
+      - /data/ipfs # or you can mount it directly to some directory on your system
+  ipfs-publish:
+    image: auhau/ipfs-publish
+    environment:
+      IPFS_PUBLISH_CONFIG: /data/ipfs_publish/config.toml
+      IPFS_PUBLISH_VERBOSITY: 3
+      IPFS_PUBLISH_IPFS_HOST: ipfs
+      IPFS_PUBLISH_IPFS_PORT: 5001
+    volumes:
+      - /data/ipfs_publish
+    depends_on:
+      - ipfs
+    ports:
+      - 8080:8000
+```
+
+Also you can deploy it as a standalone image using `docker`, but it requires some more configuration based on your use-case. 
+If you have running IPFS daemon on the host like this:
+
+```shell
+$ docker run -e IPFS_PUBLISH_CONFIG=/data/ipfs_publish/config.toml
+ -e IPFS_PUBLISH_IPFS_HOST=localhost -e IPFS_PUBLISH_IPFS_PORT=5001 --network="host" auhau/ipfs_publish
+```
+
+!!! warning "Host network"
+    `--network="host"` will bind the container's ports directly to the machine exposing it to the world, so be careful
+    with that! With this configuration you can use `localhost` address which will address the host machine.
+    
+    **Be aware that this mode does not work on macOS!**
+    
+!!! tip "Non-host network approach"
+    If you don't want to use the `--network="host"` mode, you can achieve similar behaviour if you set 
+    `IPFS_PUBLISH_IPFS_HOST=$HOST_ADDR`. `HOST_ADDR` is a special environment variable, that
+    is set inside the container and is resolved to IP address under which the host machine is reachable.
+    
+    !!! warning "IPFS Daemon API restriction"
+        By default the Daemon API is listening only for connection from localhost. If you want to run the IPFS Daemon
+        on the host and connect to it from container as described before, then you have to configure the IPFS Daemon 
+        to listen to correct address. 
+         
+        
 ## Usage
 
 Upon the first invocation of the command `ipfs-publish`, you are asked to specify some general configuration, like

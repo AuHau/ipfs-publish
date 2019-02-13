@@ -1,4 +1,4 @@
-# IPFS CD Publish - WIP
+# IPFS Publish
 
 > Continuous Delivery of static websites from Git to IPFS
 
@@ -17,6 +17,7 @@ CLI is in place to manage the repos.
 
 * Ignore files - `.ipfs_publish_ignore` file specify entries that should be removed before adding the repo to IPFS
 * Publish directory - you can publish only specific sub-directory inside the repo
+* Publish specific branch - you can specify which branch should be published from the repo
 * Build script - before adding to IPFS you can run script/binary inside the cloned repo
 * After publish script - after the publishing to IPFS, this script is run with argument of the created IPFS address
 
@@ -53,7 +54,34 @@ Then you can use the command `ipfs-publish` to manage your repos and/or start th
 
 ### Docker
 
-TBD
+There is official Docker image build with name: `auhau/ipfs-publish`
+
+Easiest way to run ipfs-publish is with docker-compose. Here is example for its configuration:
+
+```yaml
+version: '3'
+
+services:
+  ipfs:
+    image: ipfs/go-ipfs:v0.4.18
+    volumes:
+      - /data/ipfs # or you can mount it directly to some directory on your system
+  ipfs-publish:
+    image: auhau/ipfs-publish
+    environment:
+      IPFS_PUBLISH_CONFIG: /data/ipfs_publish/config.toml
+      IPFS_PUBLISH_VERBOSITY: 3
+      IPFS_PUBLISH_IPFS_HOST: ipfs
+      IPFS_PUBLISH_IPFS_PORT: 5001
+    volumes:
+      - /data/ipfs_publish
+    depends_on:
+      - ipfs
+    ports:
+      - 8080:8000
+```
+
+For more information see [documentation](https://ipfs-publish.adam-uhlir.me/#docker).
 
 ## Usage
 
@@ -94,10 +122,10 @@ Running on http://localhost:8080 (CTRL + C to quit)
 
 ## Contributing
 
-Feel free to dive in, contributions are welcomed! [Open an issue](https://github.com/AuHau/ipfs-cd-publish/issues/new) or submit PRs.
+Feel free to dive in, contributions are welcomed! [Open an issue](https://github.com/AuHau/ipfs-publish/issues/new) or submit PRs.
 
-For PRs and tips about development please see [contribution guideline](https://github.com/AuHau/ipfs-cd-publish/blob/master/CONTRIBUTING.md).
+For PRs and tips about development please see [contribution guideline](https://github.com/AuHau/ipfs-publish/blob/master/CONTRIBUTING.md).
 
 ## License
 
-[MIT ©  Adam Uhlir](https://github.com/AuHau/ipfs-cd-publish/blob/master/LICENSE)
+[MIT ©  Adam Uhlir](https://github.com/AuHau/ipfs-publish/blob/master/LICENSE)

@@ -93,6 +93,11 @@ class Config:
                 host = os.environ.get(ENV_NAME_IPFS_HOST)
                 port = os.environ.get(ENV_NAME_IPFS_PORT)
 
+            # Hack to allow cross-platform Docker to reference the Docker host's machine with $HOST_ADDR
+            if host.startswith('$'):
+                logger.info(f'Resolving host name from environment variable {host}')
+                host = os.environ[host[1:]]
+
             logger.info('Connecting and caching to IPFS host \'{}\' on port {}'.format(host, port))
             self._ipfs = ipfsapi.connect(host, port)
 
