@@ -5,6 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/ipfs-publish.svg)](https://badge.fury.io/py/ipfs-publish) 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ipfs-publish.svg)](https://pypi.org/project/ipfs-publish)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/ipfs-publish.svg)](https://pypi.org/project/ipfs-publish/) 
+[![Docker Hub - Pulls](https://img.shields.io/docker/pulls/auhau/ipfs-publish.svg?style=flat)](https://hub.docker.com/r/auhau/ipfs-publish) 
 [![codecov](https://codecov.io/gh/AuHau/ipfs-publish/branch/master/graph/badge.svg)](https://codecov.io/gh/AuHau/ipfs-publish) 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/fd28ce2a500a4b1fab6f9a0a40e2fa80)](https://app.codacy.com/app/AuHau/ipfs-publish)
 [![Updates](https://pyup.io/repos/github/AuHau/ipfs-publish/shield.svg)](https://pyup.io/repos/github/AuHau/ipfs-publish/)
@@ -124,6 +125,9 @@ IPNS lifetime: 24h
 IPNS address: /ipns/QmRTqaW3AJJXmKyiNT7MqqZ4VjGtNNxPyTkgo3Q7pmoCeX/
 Last IPFS address: None
 Webhook address: http://localhost:8080/publish/github_com_auhau_auhau_github_io
+
+# You can manually publish repo
+$ ipfs-publish publish github_com_auhau_auhau_github_io
 
 # Starts HTTP server & IPNS republishing service
 $ ipfs-publish server &

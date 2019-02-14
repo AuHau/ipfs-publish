@@ -170,6 +170,9 @@ IPNS address: /ipns/QmRTqaW3AJJXmKyiNT7MqqZ4VjGtNNxPyTkgo3Q7pmoCeX/
 Last IPFS address: None
 Webhook address: http://localhost:8080/publish/github_com_auhau_auhau_github_io
 
+# You can manually publish repo
+$ ipfs-publish publish github_com_auhau_auhau_github_io
+
 # Starts HTTP server & IPNS republishing service
 $ ipfs-publish server &
 Running on http://localhost:8080 (CTRL + C to quit)

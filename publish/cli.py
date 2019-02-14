@@ -165,6 +165,24 @@ def rm(ctx, name, keep_pinned=False, keep_ipns=False):
     click.echo('Repo successfully removed!')
 
 
+@cli.command(short_help='Publish repo')
+@click.argument('name')
+@click.pass_context
+def publish(ctx, name):
+    """
+    Will immediately publish repo based on its configuration.
+    """
+    config: config_module.Config = ctx.obj['config']
+    repo: publishing.GenericRepo = config.repos.get(name)
+
+    if repo is None:
+        click.secho('Unknown repo!', fg='red')
+        exit(1)
+
+    repo.publish_repo()
+    click.echo('Repo successfully published!')
+
+
 @cli.command(short_help='Starts HTTP server')
 @click.option('--port', '-p', type=int, help='Fort number')
 @click.option('--host', '-h', help='Hostname on which the server will listen')
