@@ -122,6 +122,7 @@ Git URL: https://github.com/auhau/auhau.github.io
 Secret: EAHJ43UYT7LUEM4QFRZ4IFAXL
 IPNS key: ipfs_publishg_github_com_auhau_auhau_github_io
 IPNS lifetime: 24h
+IPNS ttl: 15m
 IPNS address: /ipns/QmRTqaW3AJJXmKyiNT7MqqZ4VjGtNNxPyTkgo3Q7pmoCeX/
 Last IPFS address: None
 Webhook address: http://localhost:8080/publish/github_com_auhau_auhau_github_io

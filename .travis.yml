@@ -71,10 +71,13 @@ jobs:
         - mkdocs gh-deploy -v --clean --remote-name gh-token;
     - stage: deploy-release
       name: "Create draft release"
+      language: python
+      python: '3.6'
+      script: echo 'Lets do it!'
       deploy:
         provider: releases
         api_key: ${GH_TOKEN}
         draft: true
         on:
           tags: true
-          repo: AuHau/giTrack
+          repo: AuHau/ipfs-publish
