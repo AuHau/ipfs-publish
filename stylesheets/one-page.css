@@ -1,0 +1,37 @@
+.md-sidebar--primary {
+    display: none;
+}
+
+.md-sidebar--secondary {
+    display: block;
+    margin-left: 0;
+    transform: none;
+}
+
+.md-content {
+    margin-right: 0;
+}
+
+[data-md-toggle=drawer]:checked ~ .md-container .md-sidebar--secondary {
+    box-shadow: 0 8px 10px 1px rgba(0, 0, 0, .14), 0 3px 14px 2px rgba(0, 0, 0, .12), 0 5px 5px -3px rgba(0, 0, 0, .4);
+    -webkit-transform: translateX(24.2rem);
+    transform: translateX(24.2rem);
+}
+
+@media only screen and (max-width: 76.1875em) {
+    .md-sidebar--secondary {
+        position: fixed;
+        top: 0;
+        left: -24.2rem;
+        width: 24.2rem;
+        height: 100% !important;
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+        transition: box-shadow .25s, -webkit-transform .25s cubic-bezier(.4, 0, .2, 1);
+        transition: transform .25s cubic-bezier(.4, 0, .2, 1), box-shadow .25s;
+        transition: transform .25s cubic-bezier(.4, 0, .2, 1), box-shadow .25s, -webkit-transform .25s cubic-bezier(.4, 0, .2, 1);
+        background-color: #fff;
+        z-index: 3;
+
+    }
+}
