@@ -138,10 +138,10 @@ class Config:
     def bootstrap(cls, path):
         click.echo('Welcome!\nLet\'s bootstrap some basic configuration:')
         host = inquirer.shortcuts.text('Set web server\'s host', default='localhost')
-        port = int(inquirer.shortcuts.text('Set web server\'s port', default=8080, validate=lambda _, x: str(x).isdigit()))
+        port = int(inquirer.shortcuts.text('Set web server\'s port', default='8080', validate=lambda _, x: str(x).isdigit()))
 
         ipfs_host = inquirer.shortcuts.text('Set IPFS\'s host', default='localhost')
-        ipfs_port = int(inquirer.shortcuts.text('Set IPFS\'s port', default=5001, validate=lambda _, x: str(x).isdigit()))
+        ipfs_port = int(inquirer.shortcuts.text('Set IPFS\'s port', default='5001', validate=lambda _, x: str(x).isdigit()))
 
         with path.open('w') as f:
             toml.dump({'host': host, 'port': port, 'ipfs': {'host': ipfs_host, 'port': ipfs_port, }}, f)
