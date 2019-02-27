@@ -7,7 +7,7 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/ipfs-publish.svg)](https://pypi.org/project/ipfs-publish/) 
 [![Docker Hub - Pulls](https://img.shields.io/docker/pulls/auhau/ipfs-publish.svg?style=flat)](https://hub.docker.com/r/auhau/ipfs-publish) 
 [![codecov](https://codecov.io/gh/AuHau/ipfs-publish/branch/master/graph/badge.svg)](https://codecov.io/gh/AuHau/ipfs-publish) 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/fd28ce2a500a4b1fab6f9a0a40e2fa80)](https://app.codacy.com/app/AuHau/ipfs-publish)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/58e8cff391b74f679d9d05a59df6bd77)](https://app.codacy.com/app/AuHau/ipfs-publish)
 [![Updates](https://pyup.io/repos/github/AuHau/ipfs-publish/shield.svg)](https://pyup.io/repos/github/AuHau/ipfs-publish/)
 
 
