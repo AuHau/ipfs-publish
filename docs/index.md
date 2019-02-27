@@ -22,7 +22,7 @@ CLI is in place to manage the repos.
 * go-ipfs daemon
 * UNIX-Like machine with public IP
 
-!!! warning 'Web server warning'
+!!! warning "Web server warning"
     This tool is shipped with a basic web server that is mainly meant for a development environment 
     and is a single-threaded based, hence it is not meant for heavy load. As I am not expecting 
     that this tool would scale big it should be sufficient to use. If you would have the need you can 
@@ -39,27 +39,6 @@ $ pip install ipfs-publish
 
 Then you can use the command `ipfs-publish` to manage your repos and/or start the webhook's server.
 
-!!! tip "Service definition"
-    Depanding on your OS, you can create a systemd service for running the webhook's server. It will handle restarting
-    the service, and provides easy way how to manage it:
-    
-    ```
-    [Unit]
-    Description=ipfs-publish webhook server
-    After=network.target
-    StartLimitIntervalSec=0
-    
-    [Service]
-    Type=simple
-    Restart=always
-    RestartSec=1
-    User=<<your user>>
-    ExecStart=ipfs-publish server
-    
-    [Install]
-    WantedBy=multi-user.target
-    ```
-    
 ### Docker
 
 If you plan to let some other users to use your ipfs-publish instance, then it might be good idea to run it inside
@@ -121,7 +100,57 @@ $ docker run -e IPFS_PUBLISH_CONFIG=/data/ipfs_publish/config.toml
         By default the Daemon API is listening only for connection from localhost. If you want to run the IPFS Daemon
         on the host and connect to it from container as described before, then you have to configure the IPFS Daemon 
         to listen to correct address. 
-         
+        
+### systemd service
+Depanding on your OS, you can create a systemd service for running the webhook's server. It will handle restarting
+the service, and provides easy way how to manage it.
+
+
+**ipfs-publish.service**
+    
+```
+[Unit]
+Description=ipfs-publish webhook server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=<<your user>>
+ExecStart=ipfs-publish server
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Moreover you can defined reloading service which can automatically reload the configuration inside the server on change
+and hence mitigate the current limitation of ipfs-publish. You can define it as:
+
+**ipfs-publish-watcher.service**
+```
+[Unit]
+Description=ipfs-publish restarter
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl restart ipfs-publish.service
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**ipfs-publish-watcher.path**
+```
+[Path]
+PathModified=<<PATH TO YOUR CONFIG>>
+
+[Install]
+WantedBy=multi-user.target
+```
+
         
 ## Usage
 
@@ -177,6 +206,10 @@ $ ipfs-publish publish github_com_auhau_auhau_github_io
 $ ipfs-publish server &
 Running on http://localhost:8080 (CTRL + C to quit)
 ```
+
+!!! warning "Restarting server after changes"
+    If you do any modifications of the ipfs-publish state (eq. call `add` / `remove` commands) than
+    the changes will be propagated only after restart of the ipfs-publish server!
 
 ### Environment variables overview
 
