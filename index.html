@@ -330,6 +330,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#systemd-service" title="systemd service" class="md-nav__link">
+    systemd service
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -464,6 +471,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#systemd-service" title="systemd service" class="md-nav__link">
+    systemd service
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -567,39 +581,20 @@ under configured IPNS name.</p>
 <li>go-ipfs daemon</li>
 <li>UNIX-Like machine with public IP</li>
 </ul>
-<p>!!! warning 'Web server warning'
-    This tool is shipped with a basic web server that is mainly meant for a development environment 
-    and is a single-threaded based, hence it is not meant for heavy load. As I am not expecting 
-    that this tool would scale big it should be sufficient to use. If you would have the need you can 
-    deploy it with some production-scale webserver that supports the <code>ASGI</code> protocol. The <code>ASGI</code> app
-    can be found in <code>publish.http:app</code> package.</p>
+<div class="admonition warning">
+<p class="admonition-title">Web server warning</p>
+<p>This tool is shipped with a basic web server that is mainly meant for a development environment 
+and is a single-threaded based, hence it is not meant for heavy load. As I am not expecting 
+that this tool would scale big it should be sufficient to use. If you would have the need you can 
+deploy it with some production-scale webserver that supports the <code>ASGI</code> protocol. The <code>ASGI</code> app
+can be found in <code>publish.http:app</code> package.</p>
+</div>
 <h3 id="pip">pip<a class="headerlink" href="#pip" title="Permanent link">&para;</a></h3>
 <p>You can install ipfs-publish directly on your machine using <code>pip</code>:</p>
 <div class="codehilite"><pre><span></span>$ pip install ipfs-publish
 </pre></div>
 
 <p>Then you can use the command <code>ipfs-publish</code> to manage your repos and/or start the webhook's server.</p>
-<div class="admonition tip">
-<p class="admonition-title">Service definition</p>
-<p>Depanding on your OS, you can create a systemd service for running the webhook's server. It will handle restarting
-the service, and provides easy way how to manage it:</p>
-<div class="codehilite"><pre><span></span>[Unit]
-Description=ipfs-publish webhook server
-After=network.target
-StartLimitIntervalSec=0
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=1
-User=&lt;&lt;your user&gt;&gt;
-ExecStart=ipfs-publish server
-
-[Install]
-WantedBy=multi-user.target
-</pre></div>
-
-</div>
 <h3 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h3>
 <p>If you plan to let some other users to use your ipfs-publish instance, then it might be good idea to run it inside
 Docker, for at least some level isolation from rest of your system. <strong>But it is bit more complicated to setup.</strong></p>
@@ -658,6 +653,47 @@ on the host and connect to it from container as described before, then you have 
 to listen to correct address. </p>
 </div>
 </div>
+<h3 id="systemd-service">systemd service<a class="headerlink" href="#systemd-service" title="Permanent link">&para;</a></h3>
+<p>Depanding on your OS, you can create a systemd service for running the webhook's server. It will handle restarting
+the service, and provides easy way how to manage it.</p>
+<p><strong>ipfs-publish.service</strong></p>
+<div class="codehilite"><pre><span></span>[Unit]
+Description=ipfs-publish webhook server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=&lt;&lt;your user&gt;&gt;
+ExecStart=ipfs-publish server
+
+[Install]
+WantedBy=multi-user.target
+</pre></div>
+
+<p>Moreover you can defined reloading service which can automatically reload the configuration inside the server on change
+and hence mitigate the current limitation of ipfs-publish. You can define it as:</p>
+<p><strong>ipfs-publish-watcher.service</strong>
+<div class="codehilite"><pre><span></span>[Unit]
+Description=ipfs-publish restarter
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl restart ipfs-publish.service
+
+[Install]
+WantedBy=multi-user.target
+</pre></div></p>
+<p><strong>ipfs-publish-watcher.path</strong>
+<div class="codehilite"><pre><span></span>[Path]
+PathModified=&lt;&lt;PATH TO YOUR CONFIG&gt;&gt;
+
+[Install]
+WantedBy=multi-user.target
+</pre></div></p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>Upon the first invocation of the command <code>ipfs-publish</code>, you are asked to specify some general configuration, like
 how to connect to the IPFS daemon etc. This process will create the config file. </p>
@@ -710,6 +746,11 @@ $ ipfs-publish server <span class="p">&amp;</span>
 Running on http://localhost:8080 <span class="o">(</span>CTRL + C to quit<span class="o">)</span>
 </pre></div>
 
+<div class="admonition warning">
+<p class="admonition-title">Restarting server after changes</p>
+<p>If you do any modifications of the ipfs-publish state (eq. call <code>add</code> / <code>remove</code> commands) than
+the changes will be propagated only after restart of the ipfs-publish server!</p>
+</div>
 <h3 id="environment-variables-overview">Environment variables overview<a class="headerlink" href="#environment-variables-overview" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>IPFS_PUBLISH_VERBOSITY</code> (int) - specifies verbosity level, same like the <code>-vvv</code> option.</li>
