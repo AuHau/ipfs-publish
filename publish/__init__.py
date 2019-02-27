@@ -1,6 +1,6 @@
 from pbr.version import VersionInfo
 
-VERSION = VersionInfo('publish').semantic_version()
+VERSION = VersionInfo('ipfs-publish').semantic_version()
 __version__ = VERSION.release_string()
 
 APP_NAME = 'ipfs_publish'
