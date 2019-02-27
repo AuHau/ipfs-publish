@@ -41,7 +41,7 @@ class Config:
         self._verify_data(data)
 
         repos: typing.Dict[str, publishing.GenericRepo] = {}
-        for key, value in data.pop('repos', {}).items():
+        for value in data.pop('repos', {}).values():
             repo_class = publishing.get_repo_class(value['git_repo_url'])
             repo = repo_class.from_toml_dict(value, self)
             repos[repo.name] = repo
