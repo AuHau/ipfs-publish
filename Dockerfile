@@ -5,7 +5,7 @@ LABEL description="Allows continuously publishing static pages from Git reposito
 
 ARG IPFS_PUBLISH_CONFIG=/data/ipfs_publish/config.toml
 
-RUN apt-get -y install git=2.19.1 \
+RUN apt-get -y install git \
   && mkdir -p /data \
   && adduser --home /data --uid 1000 --disabled-password --ingroup users ipfs_publish \
   && chown ipfs_publish:users /data
