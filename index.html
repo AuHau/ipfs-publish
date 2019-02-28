@@ -673,7 +673,7 @@ ExecStart=ipfs-publish server
 WantedBy=multi-user.target
 </pre></div>
 
-<p>Moreover you can defined reloading service which can automatically reload the configuration inside the server on change
+<p>Moreover you can define reloading service which can automatically reload the configuration inside the server on change
 and hence mitigate the current limitation of ipfs-publish. You can define it as:</p>
 <p><strong>ipfs-publish-watcher.service</strong>
 <div class="codehilite"><pre><span></span>[Unit]
@@ -694,6 +694,11 @@ PathModified=&lt;&lt;PATH TO YOUR CONFIG&gt;&gt;
 [Install]
 WantedBy=multi-user.target
 </pre></div></p>
+<p>Remember that you have to enable&amp;start both <code>.service</code> and <code>.path</code> units!</p>
+<div class="codehilite"><pre><span></span>$ systemctl <span class="nb">enable</span> ipfs-publish-watcher.service <span class="o">&amp;&amp;</span> systemctl start ipfs-publish-watcher.service
+$ systemctl <span class="nb">enable</span> ipfs-publish-watcher.path <span class="o">&amp;&amp;</span> systemctl start ipfs-publish-watcher.path
+</pre></div>
+
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>Upon the first invocation of the command <code>ipfs-publish</code>, you are asked to specify some general configuration, like
 how to connect to the IPFS daemon etc. This process will create the config file. </p>
