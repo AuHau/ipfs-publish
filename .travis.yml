@@ -79,7 +79,6 @@ jobs:
       deploy:
         provider: releases
         api_key: ${GH_TOKEN}
-        draft: true
         on:
           tags: true
           repo: AuHau/ipfs-publish
