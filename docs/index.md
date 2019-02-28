@@ -125,7 +125,7 @@ ExecStart=ipfs-publish server
 WantedBy=multi-user.target
 ```
 
-Moreover you can defined reloading service which can automatically reload the configuration inside the server on change
+Moreover you can define reloading service which can automatically reload the configuration inside the server on change
 and hence mitigate the current limitation of ipfs-publish. You can define it as:
 
 **ipfs-publish-watcher.service**
@@ -149,6 +149,13 @@ PathModified=<<PATH TO YOUR CONFIG>>
 
 [Install]
 WantedBy=multi-user.target
+```
+
+Remember that you have to enable&start both `.service` and `.path` units!
+
+```shell
+$ systemctl enable ipfs-publish-watcher.service && systemctl start ipfs-publish-watcher.service
+$ systemctl enable ipfs-publish-watcher.path && systemctl start ipfs-publish-watcher.path
 ```
 
         
