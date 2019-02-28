@@ -162,6 +162,26 @@ def validate_branch(git_url: str, name: str) -> bool:
     return False
 
 
+def get_default_branch(gir_url: str) -> str:
+    """
+    Returns the default branch for Git repo
+    :param gir_url:
+    :return:
+    """
+    result = subprocess.run(f'git -c core.askpass=\'echo\' ls-remote --symref {gir_url} HEAD',
+                            shell=True, capture_output=True)
+    if result.returncode != 0:
+        raise exceptions.RepoException(f'Error while fetching Git\'s remote refs! {result.stderr.decode("utf-8")}')
+
+    refs_list = result.stdout.decode("utf-8")
+    match = re.findall(r'refs/heads/([\w_-]*)\t', refs_list, re.MULTILINE)
+
+    if len(match) != 1:
+        raise exceptions.RepoException('We can\'t determine which is the default branch, please specify it manually!')
+
+    return match[0]
+
+
 def is_github_url(url: str) -> bool:
     """
     Validate if passed URL is GitHub's url.
@@ -535,11 +555,11 @@ class GenericRepo:
                                       default=get_name_from_url(git_repo_url),
                                       validate=lambda _, x: validate_name(x, config)).lower()
 
-        branch = cls.bootstrap_property('Branch name', 'text', 'Do you want to check-out specific branch?', branch,
+        branch = cls.bootstrap_property('Branch name', 'text', 'Which branch name should be build?', branch,
                                         default=DEFAULT_BRANCH_PLACEHOLDER,
                                         validate=lambda _, x: validate_branch(git_repo_url, x))
         if branch == DEFAULT_BRANCH_PLACEHOLDER:
-            branch = None
+            branch = get_default_branch(git_repo_url)
 
         ipns_key, ipns_addr = bootstrap_ipns(config, name, ipns_key)
 

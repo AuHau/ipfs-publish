@@ -2,9 +2,10 @@
 
 repo_name=$1
 secret=$2
-url=${3-http://localhost:8000}
+ref=$3
+url=${4-http://localhost:8000}
 
-data="{\"ref\": \"\"}"
+data="{\"ref\": \"refs/heads/${ref}\"}"
 
 sig=$(echo -n "${data}" | openssl dgst -sha1 -hmac "${secret}" | awk '{print "X-Hub-Signature: sha1="$1}')
 

@@ -114,6 +114,18 @@ class GithubHandler(GenericHandler):
             logger.warning(f'Request for GitHub repo \'{self.repo.name}\' was not result of push event!')
             abort(501)
 
+        if self.repo.branch:
+            if request.is_json:
+                data = await request.get_json()
+            else:
+                data = await request.form
+
+            expected_ref = f'refs/heads/{self.repo.branch}'
+            if data['ref'] != expected_ref:
+                logger.debug(f'Received push-event for \'{self.repo.name}\', but for branch \'{data["ref"]}\' '
+                             f'instead of expected \'{expected_ref}\' - ignoring the event')
+                abort(204, 'Everything OK, but not following this branch. Build skipped.')
+
         loop = asyncio.get_event_loop()
 
         # noinspection PyAsyncCall
