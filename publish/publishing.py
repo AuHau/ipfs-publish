@@ -335,8 +335,10 @@ class GenericRepo:
         :return:
         """
         os.chdir(str(cwd))
+        full_cmd = f'{cmd} {" ".join(args)}'
+        logger.info(f'Running shell command "{full_cmd}" with cwd={cwd}')
 
-        r = subprocess.run(f'{cmd} {" ".join(args)}', shell=True, capture_output=True)
+        r = subprocess.run(full_cmd, shell=True, capture_output=True)
 
         if r.returncode != 0:
             r.stderr and logger.debug(f'STDERR: {r.stderr.decode("utf-8")}')
@@ -351,7 +353,7 @@ class GenericRepo:
         """
         path = self._clone_repo()
 
-        if self.build_bin is not None:
+        if self.build_bin:
             self._run_bin(path, self.build_bin)
 
         self._remove_ignored_files(path)
@@ -370,7 +372,7 @@ class GenericRepo:
         if self.ipns_key is not None:
             self.publish_name()
 
-        if self.after_publish_bin is not None:
+        if self.after_publish_bin:
             self._run_bin(path, self.after_publish_bin, self.last_ipfs_addr)
 
         self._cleanup_repo(path)
