@@ -92,7 +92,7 @@ services:
       - 8080:8000
 ```
 
-For more information see [documentation](https://ipfs-publish.adam-uhlir.me/#docker).
+For more information see [documentation](https://ipfs-publish.uhlir.dev/#docker).
 
 ## Usage
 
