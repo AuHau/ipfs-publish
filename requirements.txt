@@ -1,6 +1,6 @@
 gitpython==2.1.13
 click==7.0
-inquirer==2.5.1
+inquirer==2.6.3
 click-completion==0.5.0
 pbr==5.1.2
 quart==0.8.1
