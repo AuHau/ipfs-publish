@@ -13,7 +13,7 @@ import typing
 import click
 import git
 import inquirer
-import ipfsapi
+import ipfshttpclient
 
 from publish import config as config_module, exceptions, PUBLISH_IGNORE_FILENAME, DEFAULT_LENGTH_OF_SECRET, \
     IPNS_KEYS_NAME_PREFIX, IPNS_KEYS_TYPE, helpers
@@ -381,11 +381,11 @@ class GenericRepo:
         ipfs = self.config.ipfs
         if not self.config['keep_pinned_previous_versions'] and self.last_ipfs_addr is not None:
             logger.info(f'Unpinning hash: {self.last_ipfs_addr}')
-            ipfs.pin_rm(self.last_ipfs_addr)
+            ipfs.pin.rm(self.last_ipfs_addr)
 
         publish_dir = path / (self.publish_dir[1:] if self.publish_dir.startswith('/') else self.publish_dir)
         logger.info(f'Adding directory {publish_dir} to IPFS')
-        result = ipfs.add(str(publish_dir), recursive=True, pin=self.pin)
+        result = ipfs.add(publish_dir, recursive=True, pin=self.pin)
         self.last_ipfs_addr = f'/ipfs/{result[-1]["Hash"]}/'
         logger.info(f'Repo successfully added to IPFS with hash: {self.last_ipfs_addr}')
 
@@ -407,7 +407,7 @@ class GenericRepo:
 
         logger.info('Updating IPNS name')
         ipfs = self.config.ipfs
-        ipfs.name_publish(self.last_ipfs_addr, key=self.ipns_key, ttl=self.ipns_ttl)
+        ipfs.name.publish(self.last_ipfs_addr, key=self.ipns_key, ttl=self.ipns_ttl)
         logger.info('IPNS successfully published')
 
     def _clone_repo(self) -> pathlib.Path:
@@ -621,13 +621,13 @@ def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None
             ipns_key = f'{IPNS_KEYS_NAME_PREFIX}_{name}'
 
             try:
-                out = config.ipfs.key_gen(ipns_key, IPNS_KEYS_TYPE)
-            except ipfsapi.exceptions.Error:
+                out = config.ipfs.key.gen(ipns_key, IPNS_KEYS_TYPE)
+            except ipfshttpclient.exceptions.Error:
                 use_existing = inquirer.shortcuts.confirm(f'There is already IPNS key with name \'{ipns_key}\', '
                                                           f'do you want to use it?', default=True)
 
                 if use_existing:
-                    keys = config.ipfs.key_list()
+                    keys = config.ipfs.key.list()
                     out = next((x for x in keys['Keys'] if x['Name'] == ipns_key), None)
 
                     if out is None:
@@ -637,19 +637,19 @@ def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None
                         ipns_key = inquirer.shortcuts.text('Then please provide non-existing name for the IPNS key')
 
                         try:
-                            out = config.ipfs.key_gen(ipns_key, IPNS_KEYS_TYPE)
+                            out = config.ipfs.key.gen(ipns_key, IPNS_KEYS_TYPE)
                             break
-                        except ipfsapi.exceptions.Error:
+                        except ipfshttpclient.exceptions.Error:
                             click.echo('There is already existing key with this name!')
                             continue
 
             ipns_addr = f'/ipns/{out["Id"]}/'
     else:
-        keys = config.ipfs.key_list()
+        keys = config.ipfs.key.list()
         key_object = next((x for x in keys['Keys'] if x['Name'] == ipns_key), None)
         if key_object is None:
             logger.info('The passed IPNS key name \'{}\' was not found, generating new key with this name')
-            key_object = config.ipfs.key_gen(ipns_key, IPNS_KEYS_TYPE)
+            key_object = config.ipfs.key.gen(ipns_key, IPNS_KEYS_TYPE)
 
         ipns_addr = f'/ipns/{key_object["Id"]}/'
 

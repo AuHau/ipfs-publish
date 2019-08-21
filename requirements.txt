@@ -4,6 +4,6 @@ inquirer==2.5.1
 click-completion==0.5.0
 pbr==5.1.2
 quart==0.8.1
-ipfsapi==0.4.3
+ipfshttpclient
 toml==0.10.0
 appdirs==1.4.3
