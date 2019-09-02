@@ -1,4 +1,4 @@
-gitpython==2.1.11
+gitpython==3.0.2
 click==7.0
 inquirer==2.5.1
 click-completion==0.5.0
