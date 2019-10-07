@@ -2,7 +2,7 @@ gitpython==3.0.3
 click==7.0
 inquirer==2.6.3
 click-completion==0.5.1
-pbr==5.1.2
+pbr==5.4.3
 quart==0.8.1
 ipfsapi==0.4.3
 toml==0.10.0
