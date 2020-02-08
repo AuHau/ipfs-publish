@@ -4,7 +4,7 @@ import shutil
 import subprocess
 
 import git
-import ipfsapi
+import ipfshttpclient
 import pytest
 
 from publish import publishing, exceptions, PUBLISH_IGNORE_FILENAME
@@ -27,28 +27,28 @@ class TestRepo:
         mocker.patch.object(git.Repo, 'clone_from')
         mocker.patch.object(shutil, 'rmtree')
 
-        ipfs_client_mock = mocker.Mock(spec=ipfsapi.Client)
+        ipfs_client_mock = mocker.Mock(spec=ipfshttpclient.Client)
         ipfs_client_mock.add.return_value = [{'Hash': 'some-hash'}]
 
-        mocker.patch.object(ipfsapi, 'connect')
-        ipfsapi.connect.return_value = ipfs_client_mock
+        mocker.patch.object(ipfshttpclient, 'connect')
+        ipfshttpclient.connect.return_value = ipfs_client_mock
 
         repo: publishing.GenericRepo = factories.RepoFactory()
         repo.publish_repo()
 
         ipfs_client_mock.add.assert_called_once_with(mocker.ANY, recursive=True, pin=True)
-        ipfs_client_mock.pin_rm.assert_not_called()
+        ipfs_client_mock.pin.rm.assert_not_called()
         assert repo.last_ipfs_addr == '/ipfs/some-hash/'
 
     def test_publish_repo_bins(self, mocker):
         mocker.patch.object(git.Repo, 'clone_from')
         mocker.patch.object(shutil, 'rmtree')
 
-        ipfs_client_mock = mocker.Mock(spec=ipfsapi.Client)
+        ipfs_client_mock = mocker.Mock(spec=ipfshttpclient.Client)
         ipfs_client_mock.add.return_value = [{'Hash': 'some-hash'}]
 
-        mocker.patch.object(ipfsapi, 'connect')
-        ipfsapi.connect.return_value = ipfs_client_mock
+        mocker.patch.object(ipfshttpclient, 'connect')
+        ipfshttpclient.connect.return_value = ipfs_client_mock
 
         mocker.patch.object(subprocess, 'run')
         subprocess.run.return_value = subprocess.CompletedProcess(None, 0)
@@ -64,11 +64,11 @@ class TestRepo:
         mocker.patch.object(git.Repo, 'clone_from')
         mocker.patch.object(shutil, 'rmtree')
 
-        ipfs_client_mock = mocker.Mock(spec=ipfsapi.Client)
+        ipfs_client_mock = mocker.Mock(spec=ipfshttpclient.Client)
         ipfs_client_mock.add.return_value = [{'Hash': 'some-hash'}]
 
-        mocker.patch.object(ipfsapi, 'connect')
-        ipfsapi.connect.return_value = ipfs_client_mock
+        mocker.patch.object(ipfshttpclient, 'connect')
+        ipfshttpclient.connect.return_value = ipfs_client_mock
 
         mocker.patch.object(subprocess, 'run')
         subprocess.run.return_value = subprocess.CompletedProcess(None, 1)
@@ -82,16 +82,16 @@ class TestRepo:
         mocker.patch.object(git.Repo, 'clone_from')
         mocker.patch.object(shutil, 'rmtree')
 
-        ipfs_client_mock = mocker.Mock(spec=ipfsapi.Client)
+        ipfs_client_mock = mocker.Mock(spec=ipfshttpclient.Client)
         ipfs_client_mock.add.return_value = [{'Hash': 'some-hash'}]
 
-        mocker.patch.object(ipfsapi, 'connect')
-        ipfsapi.connect.return_value = ipfs_client_mock
+        mocker.patch.object(ipfshttpclient, 'connect')
+        ipfshttpclient.connect.return_value = ipfs_client_mock
 
         repo: publishing.GenericRepo = factories.RepoFactory(last_ipfs_addr='some_hash')
         repo.publish_repo()
 
-        ipfs_client_mock.pin_rm.assert_called_once_with('some_hash')
+        ipfs_client_mock.pin.rm.assert_called_once_with('some_hash')
 
     @pytest.mark.parametrize(('glob', 'paths_to_make', 'expected_unlink', 'expected_rmtree'), IGNORE_FILE_TEST_SET)
     def test_remove_ignored_files(self, glob, paths_to_make, expected_unlink, expected_rmtree, tmp_path: pathlib.Path, mocker):

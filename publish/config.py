@@ -7,7 +7,7 @@ import typing
 
 import click
 import inquirer
-import ipfsapi
+import ipfshttpclient
 import toml
 
 from publish import ENV_NAME_CONFIG_PATH, exceptions, ENV_NAME_IPFS_HOST, ENV_NAME_IPFS_PORT
@@ -84,7 +84,7 @@ class Config:
         return 'http://{}{}'.format(self['host'], f':{self["port"]}' if self['port'] != 80 else '')
 
     @property
-    def ipfs(self):  # type: () -> ipfsapi.Client
+    def ipfs(self):  # type: () -> ipfshttpclient.Client
         if self._ipfs is None:
             if self['ipfs'] is not None:
                 host = self['ipfs'].get('host') or os.environ.get(ENV_NAME_IPFS_HOST)
@@ -99,7 +99,7 @@ class Config:
                 host = os.environ[host[1:]]
 
             logger.info('Connecting and caching to IPFS host \'{}\' on port {}'.format(host, port))
-            self._ipfs = ipfsapi.connect(host, port)
+            self._ipfs = ipfshttpclient.connect(host, port)
 
         return self._ipfs
 
