@@ -23,6 +23,11 @@ ENV_NAME_IPFS_PORT: str = 'IPFS_PUBLISH_IPFS_PORT'
 Name of environmental variable that defines the port of the go-ipfs's daemon's API.
 """
 
+ENV_NAME_IPFS_MULTIADDR: str = 'IPFS_PUBLISH_IPFS_MULTIADDR'
+"""
+Name of environmental variable that defines the multiaddr of the go-ipfs's daemon's API.
+"""
+
 ENV_NAME_VERBOSITY_LEVEL: str = 'IPFS_PUBLISH_VERBOSITY'
 """
 Name of environmental variable that can increase the level of logging verbosity.

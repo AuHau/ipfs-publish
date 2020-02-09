@@ -225,6 +225,7 @@ Running on http://localhost:8080 (CTRL + C to quit)
 * `IPFS_PUBLISH_CONFIG` (str) - path to where the config file will be looked for.
 * `IPFS_PUBLISH_IPFS_HOST` (str) - hostname where IPFS HTTP API will connect to.
 * `IPFS_PUBLISH_IPFS_PORT` (int) - port which will be used for IPFS HTTP API connection.
+* `IPFS_PUBLISH_IPFS_MULTIADDR` (str) - multiaddr to connect fo IPFS HTTP Daemon. Has precedence over IPFS Host & Port.
 
 ### Publishing flow
 

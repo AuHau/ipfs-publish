@@ -10,18 +10,13 @@ import inquirer
 import ipfshttpclient
 import toml
 
-from publish import ENV_NAME_CONFIG_PATH, exceptions, ENV_NAME_IPFS_HOST, ENV_NAME_IPFS_PORT
+from publish import ENV_NAME_CONFIG_PATH, exceptions, ENV_NAME_IPFS_HOST, ENV_NAME_IPFS_PORT, ENV_NAME_IPFS_MULTIADDR
 
 logger = logging.getLogger('publish.config')
 
 
 class Config:
     DEFAULT_CONFIG_PATH = os.path.expanduser('~/.ipfs_publish.toml')
-
-    MANDATORY_FIELDS = {
-        'host',
-        'port',
-    }
 
     def __init__(self, path):  # type: (pathlib.Path) -> None
         if not path.exists():
@@ -49,19 +44,8 @@ class Config:
         return data, repos
 
     def _verify_data(self, data):
-        def _recursive_check(data, schema):
-            if isinstance(schema, set):
-                schema = dict.fromkeys(schema, None)
-
-            for mandatory_key, value in schema.items():
-                if mandatory_key not in data:
-                    raise exceptions.ConfigException('\'{}\' is required configuration!'.format(mandatory_key))
-
-                # Lets recurrently checked nested options
-                if value is not None:
-                    _recursive_check(data[mandatory_key], value)
-
-        _recursive_check(data, self.MANDATORY_FIELDS)
+        if not data.get('host') or not data.get('port'):
+            raise exceptions.ConfigException('\'host\' and \'port\' are required items in configuration file!')
 
     def save(self):
         data = json.loads(json.dumps(self.data))
@@ -87,9 +71,11 @@ class Config:
     def ipfs(self):  # type: () -> ipfshttpclient.Client
         if self._ipfs is None:
             if self['ipfs'] is not None:
-                host = self['ipfs'].get('host') or os.environ.get(ENV_NAME_IPFS_HOST)
-                port = self['ipfs'].get('port') or os.environ.get(ENV_NAME_IPFS_PORT)
+                host = os.environ.get(ENV_NAME_IPFS_HOST) or self['ipfs'].get('host')
+                port = os.environ.get(ENV_NAME_IPFS_PORT) or self['ipfs'].get('port')
+                multiaddr = os.environ.get(ENV_NAME_IPFS_MULTIADDR) or self['ipfs'].get('multiaddr')
             else:
+                multiaddr = os.environ.get(ENV_NAME_IPFS_MULTIADDR)
                 host = os.environ.get(ENV_NAME_IPFS_HOST)
                 port = os.environ.get(ENV_NAME_IPFS_PORT)
 
@@ -98,8 +84,14 @@ class Config:
                 logger.info(f'Resolving host name from environment variable {host}')
                 host = os.environ[host[1:]]
 
-            logger.info('Connecting and caching to IPFS host \'{}\' on port {}'.format(host, port))
-            self._ipfs = ipfshttpclient.connect(host, port)
+            if host == 'localhost':
+                host = '127.0.0.1'
+
+            if not multiaddr:
+                multiaddr = f'/ip4/{host}/tcp/{port}/http'
+
+            logger.info(f'Connecting and caching to IPFS host \'{multiaddr}\'')
+            self._ipfs = ipfshttpclient.connect(multiaddr)
 
         return self._ipfs
 
@@ -140,10 +132,9 @@ class Config:
         host = inquirer.shortcuts.text('Set web server\'s host', default='localhost')
         port = int(inquirer.shortcuts.text('Set web server\'s port', default='8080', validate=lambda _, x: str(x).isdigit()))
 
-        ipfs_host = inquirer.shortcuts.text('Set IPFS\'s host', default='localhost')
-        ipfs_port = int(inquirer.shortcuts.text('Set IPFS\'s port', default='5001', validate=lambda _, x: str(x).isdigit()))
+        ipfs_multiaddr = inquirer.shortcuts.text('Set IPFS\'s multiaddr', default='/ip4/127.0.0.1/tcp/5001/http')
 
         with path.open('w') as f:
-            toml.dump({'host': host, 'port': port, 'ipfs': {'host': ipfs_host, 'port': ipfs_port, }}, f)
+            toml.dump({'host': host, 'port': port, 'ipfs': {'multiaddr': ipfs_multiaddr }}, f)
 
         click.echo('Bootstrap successful! Let\'s continue with your original command.\n')
