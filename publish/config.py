@@ -130,7 +130,7 @@ class Config:
     def bootstrap(cls, path):
         click.echo('Welcome!\nLet\'s bootstrap some basic configuration:')
         host = inquirer.shortcuts.text('Set web server\'s host', default='localhost')
-        port = int(inquirer.shortcuts.text('Set web server\'s port', default='8080', validate=lambda _, x: str(x).isdigit()))
+        port = int(inquirer.shortcuts.text('Set web server\'s port', default='8000', validate=lambda _, x: str(x).isdigit()))
 
         ipfs_multiaddr = inquirer.shortcuts.text('Set IPFS\'s multiaddr', default='/ip4/127.0.0.1/tcp/5001/http')
 
