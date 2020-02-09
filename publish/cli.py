@@ -180,6 +180,8 @@ def publish(ctx, name):
         exit(1)
 
     repo.publish_repo()
+    config.save()
+
     click.echo('Repo successfully published!')
 
 

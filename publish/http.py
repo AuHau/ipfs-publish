@@ -30,7 +30,10 @@ async def publish_endpoint(repo_name):
     repo = config.repos[repo_name]
     handler = handler_dispatcher(repo)
 
-    return await handler.handle_request(request)
+    resp = await handler.handle_request(request)
+
+    config.save()
+    return resp
 
 
 def handler_dispatcher(repo: typing.Union[publishing.GenericRepo, publishing.GithubRepo]) -> 'GenericHandler':
