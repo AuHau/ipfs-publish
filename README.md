@@ -31,6 +31,7 @@ CLI is in place to manage the repos.
 * Publish specific branch - you can specify which branch should be published from the repo
 * Build script - before adding to IPFS you can run script/binary inside the cloned repo
 * After publish script - after the publishing to IPFS, this script is run with argument of the created IPFS address
+* Direct DNSLink update for CloudFlare DNS provider
 
 ### Git providers
 
@@ -50,7 +51,7 @@ isolated from rest of your machine!**
 
 * Python 3.7 and higher
 * Git
-* go-ipfs daemon
+* go-ipfs daemon (tested with version 4.23)
 * UNIX-Like machine with public IP
 
 ### pip
@@ -74,7 +75,7 @@ version: '3'
 
 services:
   ipfs:
-    image: ipfs/go-ipfs:v0.4.18
+    image: ipfs/go-ipfs:v0.4.23
     volumes:
       - /data/ipfs # or you can mount it directly to some directory on your system
   ipfs-publish:

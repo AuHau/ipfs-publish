@@ -34,7 +34,6 @@ def entrypoint(args: typing.Sequence[str], obj: typing.Optional[dict] = None):
         exit(1)
 
 
-# TODO: Add --config to specify path to the config file
 @click.group()
 @click.option('--quiet', '-q', is_flag=True, help="Don't print anything")
 @click.option('--verbose', '-v', count=True, help="Prints additional info. More Vs, more info! (-vvv...)")

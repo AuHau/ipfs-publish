@@ -18,7 +18,7 @@ WORKDIR /app
 
 RUN mkdir -p /data/ipfs_publish \
   && echo 'host = "localhost"\n\
-port = 8080\n\
+port = 8000\n\
 \n\
 [repos]\n\
 ' > $IPFS_PUBLISH_CONFIG
@@ -31,4 +31,4 @@ ENTRYPOINT ["./startup.sh"]
 CMD ["server"]
 
 # Http webhook server endpoint
-EXPOSE 8080
+EXPOSE 8000

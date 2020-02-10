@@ -2,7 +2,7 @@ version: '3'
 
 services:
   ipfs:
-    image: ipfs/go-ipfs:v0.4.18
+    image: ipfs/go-ipfs:v0.4.23
     volumes:
       - /data/ipfs
   ipfs-publish:
@@ -14,8 +14,7 @@ services:
     environment:
       IPFS_PUBLISH_CONFIG: /data/ipfs_publish/config.toml
       IPFS_PUBLISH_VERBOSITY: 3
-      IPFS_PUBLISH_IPFS_HOST: ipfs
-      IPFS_PUBLISH_IPFS_PORT: 5001
+      IPFS_PUBLISH_IPFS_MULTIADDR: /dns4/ipfs/tcp/5001/http/
     volumes:
       - /data/ipfs_publish
     depends_on:

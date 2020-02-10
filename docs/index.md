@@ -49,7 +49,7 @@ webhook server is listening for incoming connections. And volume on path `/data/
 This image does not have IPFS daemon, therefore you have to provide connectivity to the daemon of your choice. 
 
 !!! info "go-ipfs verion"
-    ipfs-publish is tested with go-ipfs version **v0.4.18**, using different versions might result in unexpected behaviour!
+    ipfs-publish is tested with go-ipfs version **v0.4.23**, using different versions might result in unexpected behaviour!
 
 Easiest way to deploy ipfs-publish is using `docker-compose`, together with `go-ipfs` as container. 
 You can use this YAML configuration for it:
@@ -59,7 +59,7 @@ version: '3'
 
 services:
   ipfs:
-    image: ipfs/go-ipfs:v0.4.18
+    image: ipfs/go-ipfs:v0.4.23
     volumes:
       - /data/ipfs # or you can mount it directly to some directory on your system
   ipfs-publish:
@@ -67,8 +67,7 @@ services:
     environment:
       IPFS_PUBLISH_CONFIG: /data/ipfs_publish/config.toml
       IPFS_PUBLISH_VERBOSITY: 3
-      IPFS_PUBLISH_IPFS_HOST: ipfs
-      IPFS_PUBLISH_IPFS_PORT: 5001
+      IPFS_PUBLISH_IPFS_MULTIADDR: /dns4/ipfs/tcp/5001/http
     volumes:
       - /data/ipfs_publish
     depends_on:
@@ -82,7 +81,7 @@ If you have running IPFS daemon on the host like this:
 
 ```shell
 $ docker run -e IPFS_PUBLISH_CONFIG=/data/ipfs_publish/config.toml
- -e IPFS_PUBLISH_IPFS_HOST=localhost -e IPFS_PUBLISH_IPFS_PORT=5001 --network="host" auhau/ipfs_publish
+ -e IPFS_PUBLISH_IPFS_MULTIADDR=/ip4/127.0.0.1/tcp/5001/http --network="host" auhau/ipfs_publish
 ```
 
 !!! warning "Host network"
@@ -232,14 +231,15 @@ Running on http://localhost:8080 (CTRL + C to quit)
 When repo is being published it follows these steps:
 
 1. Freshly clone the Git repo into temporary directory, the default branch is checked out.
-2. If `build_bin` is defined, it is executed inside root of the repo.
-3. The `.git` folder is removed and if the `.ipfs_publish_ignore` file is present in root of the repo, the files 
+1. If `build_bin` is defined, it is executed inside root of the repo.
+1. The `.git` folder is removed and if the `.ipfs_publish_ignore` file is present in root of the repo, the files 
 specified in the file are removed.
-4. The old pinned version is unpinned.
-5. If `publish_dir` is specified, then this folder is added and pinned (if configured) to IPFS, otherwise the root of the repo is added.
-6. If publishing to IPNS is configured, the IPNS entry is updated.
-7. If `after_publish_bin` is defined, then it is executed inside root of the repo and the added IPFS hash is passed as argument.
-8. Cleanup of the repo.
+1. The old pinned version is unpinned.
+1. If `publish_dir` is specified, then this folder is added and pinned (if configured) to IPFS, otherwise the root of the repo is added.
+1. If publishing to IPNS is configured, the IPNS entry is updated.
+1. If CloudFlare DNS publishing is configured, then the latest CID is updated on configured DNS entry.
+1. If `after_publish_bin` is defined, then it is executed inside root of the repo and the added CID is passed as argument.
+1. Cleanup of the repo.
 
 ### Ignore files
 
@@ -266,7 +266,7 @@ build_bin = "jekyll build"
 ### After-publish binary
 
 Similarly to building binary, there is also support for running a command after publishing to the IPFS. This can be
-used for example to directly set the IPFS hash to your dns_link TXT record and not depend on IPNS. The published
+used for example to directly set the CID to your dns_link TXT record and not depend on IPNS. The published
 IPFS address is passed as a argument to the binary.
 
 The binary can be specified during the bootstrapping of the repo using CLI , or later on added into the config file under "execute" subsection
@@ -290,4 +290,33 @@ repo, or later on adding `branch=<name>` to the config:
 ```toml
 [repos.github_com_auhau_auhau_github_io]
 branch = "gh-pages"
+```
+
+### CloudFlare
+
+As IPNS is currently not very performent for resolution, it is best practice to avoid it. In order to overcome this, there
+is native support for changing DNSLink DNS record on CloudFlare provider (for other providers you have to write your own
+script and use after-publish hook).
+
+In order for this to work, ipfs-publish has to have access to CloudFlare. You have to provide a API token, for all 
+possible ways how to do that see [python-cloudflare](https://github.com/cloudflare/python-cloudflare/#providing-cloudflare-username-and-api-key)
+documentation.
+
+!!! danger "DNS Access"
+    Configure this with security in mind! If somebody would stole your API token, he can very effectively attack your website!
+    
+!!! tip "Scoped API tokens"
+    Use API Tokens with smallest privileges (eq. edit DNS entry) and limit them only to Zone that is needed!
+    
+!!! success "Recommended setting"
+    It is recommended to use the environment variable `CF_API_KEY` with API Token, preferably configured on the systemd
+    unit as these files are not readable without `sudo` and the environment variables are not passed to any hooks 
+    (`build` and `after_publish` script), which should provide hopefully satisfying level of security. 
+
+If you want to add support for this later on, you have to specify Zone and DNS ID like so:
+
+```toml
+[repos.github_com_auhau_auhau_github_io.cloudflare]
+zone_id = "fb91814936c9812312aasdfc57ac516e98"
+dns_id = "c964dfc80ed523124d1casd513hu0a52"
 ```

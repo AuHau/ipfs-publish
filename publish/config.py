@@ -80,7 +80,7 @@ class Config:
                 port = os.environ.get(ENV_NAME_IPFS_PORT)
 
             # Hack to allow cross-platform Docker to reference the Docker host's machine with $HOST_ADDR
-            if host.startswith('$'):
+            if host and host.startswith('$'):
                 logger.info(f'Resolving host name from environment variable {host}')
                 host = os.environ[host[1:]]
 

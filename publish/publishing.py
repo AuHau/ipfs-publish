@@ -15,6 +15,7 @@ import git
 import inquirer
 import ipfshttpclient
 
+from publish import cloudflare
 from publish import config as config_module, exceptions, PUBLISH_IGNORE_FILENAME, DEFAULT_LENGTH_OF_SECRET, \
     IPNS_KEYS_NAME_PREFIX, IPNS_KEYS_TYPE, helpers
 
@@ -222,7 +223,7 @@ def bootstrap_repo(config: config_module.Config, git_repo_url=None, **kwargs) ->
     return GenericRepo.bootstrap_repo(config, git_repo_url=git_repo_url, **kwargs)
 
 
-class GenericRepo:
+class GenericRepo(cloudflare.CloudFlareMixin):
     """
     Generic Repo's class that represent and store all information about Git repository that can be placed on any
     Git's provider.
@@ -244,6 +245,8 @@ class GenericRepo:
         'ipns_key': 'ipns',
         'ipns_addr': 'ipns',
         'ipns_lifetime': 'ipns',
+        'zone_id': 'cloudflare',
+        'dns_id': 'cloudflare'
     }
     """
     Mapping that maps the repo's properties into TOML's config sections.
@@ -315,7 +318,7 @@ class GenericRepo:
                  branch: typing.Optional[str] = None,
                  ipns_addr: typing.Optional[str] = None, ipns_key: typing.Optional[str] = None, ipns_lifetime='24h',
                  republish=False, pin=True, last_ipfs_addr=None, publish_dir: str = '/',
-                 build_bin=None, after_publish_bin=None, ipns_ttl='15m'):
+                 build_bin=None, after_publish_bin=None, ipns_ttl='15m', **kwargs):
         self.name = name
         self.git_repo_url = git_repo_url
         self.branch = branch
@@ -335,6 +338,8 @@ class GenericRepo:
         self.publish_dir = publish_dir
         self.build_bin = build_bin
         self.after_publish_bin = after_publish_bin
+
+        super().__init__(**kwargs)
 
     @property
     def webhook_url(self) -> str:
@@ -386,28 +391,34 @@ class GenericRepo:
         publish_dir = path / (self.publish_dir[1:] if self.publish_dir.startswith('/') else self.publish_dir)
         logger.info(f'Adding directory {publish_dir} to IPFS')
         result = ipfs.add(publish_dir, recursive=True, pin=self.pin)
-        self.last_ipfs_addr = f'/ipfs/{result[-1]["Hash"]}/'
-        logger.info(f'Repo successfully added to IPFS with hash: {self.last_ipfs_addr}')
+        cid = f'/ipfs/{result[-1]["Hash"]}/'
+        self.last_ipfs_addr = cid
+        logger.info(f'Repo successfully added to IPFS with hash: {cid}')
 
         if self.ipns_key is not None:
-            self.publish_name()
+            self.publish_name(cid)
+
+        try:
+            self.update_dns(cid)
+        except exceptions.ConfigException:
+            pass
 
         if self.after_publish_bin:
-            self._run_bin(path, self.after_publish_bin, self.last_ipfs_addr)
+            self._run_bin(path, self.after_publish_bin, cid)
 
         self._cleanup_repo(path)
 
-    def publish_name(self) -> None:
+    def publish_name(self, cid) -> None:
         """
         Main method that handles publishing of the IPFS addr into IPNS.
         :return:
         """
-        if self.last_ipfs_addr is None:
+        if cid is None:
             return
 
         logger.info('Updating IPNS name')
         ipfs = self.config.ipfs
-        ipfs.name.publish(self.last_ipfs_addr, key=self.ipns_key, ttl=self.ipns_ttl)
+        ipfs.name.publish(cid, key=self.ipns_key, ttl=self.ipns_ttl)
         logger.info('IPNS successfully published')
 
     def _clone_repo(self) -> pathlib.Path:
@@ -562,6 +573,7 @@ class GenericRepo:
             branch = get_default_branch(git_repo_url)
 
         ipns_key, ipns_addr = bootstrap_ipns(config, name, ipns_key)
+        zone_id, dns_id = cloudflare.bootstrap_cloudflare()
 
         if secret is None:
             secret = ''.join(
@@ -592,15 +604,17 @@ class GenericRepo:
             raise exceptions.RepoException('Passed ttl is not valid! Supported units are: h(our), m(inute), '
                                            's(seconds)!')
 
-        if ipns_key is None and after_publish_bin is None:
+        if ipns_key is None and after_publish_bin is None and zone_id is None:
             raise exceptions.RepoException(
-                'You have choose not to use IPNS and you also have not specified any after publish command. '
-                'This does not make sense! What do you want to do with this setting?! I have no idea, so aborting!')
+                'You have choose not to use IPNS, not modify DNSLink entry on CloudFlare and you also have not '
+                'specified any after publish command. This does not make sense! What do you want to do '
+                'with this setting?! I have no idea, so aborting!')
 
         return cls(config=config, name=name, git_repo_url=git_repo_url, branch=branch, secret=secret, pin=pin,
                    publish_dir=publish_dir,
                    ipns_key=ipns_key, ipns_addr=ipns_addr, build_bin=build_bin, after_publish_bin=after_publish_bin,
-                   republish=republish, ipns_lifetime=ipns_lifetime, ipns_ttl=ipns_ttl)
+                   republish=republish, ipns_lifetime=ipns_lifetime, ipns_ttl=ipns_ttl, dns_id=dns_id,
+                   zone_id=zone_id)
 
 
 def bootstrap_ipns(config: config_module.Config, name: str, ipns_key: str = None) -> typing.Tuple[str, str]:
