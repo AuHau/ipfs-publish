@@ -7,4 +7,4 @@ quart==0.13.0
 ipfshttpclient==0.6.0.post1
 toml==0.10.1
 appdirs==1.4.4
-cloudflare==2.6.3
+cloudflare==2.8.8
