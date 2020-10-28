@@ -15,9 +15,7 @@ jobs:
       name: "Tests"
       language: python
       python:
-        - '3.7'
-      dist: xenial
-      sudo: true
+        - '3.8'
       install:
         - pip install -r test-requirements.txt
         - pip install codecov
@@ -28,9 +26,7 @@ jobs:
     - stage: deploy-pip
       name: "Publish to PyPi"
       language: python
-      python: '3.7'
-      dist: xenial
-      sudo: true
+      python: '3.8'
       script:
         - pip install -r test-requirements.txt
       deploy:
@@ -58,9 +54,7 @@ jobs:
     - stage: deploy-mkdocs
       name: "Publish documentation"
       language: python
-      python: '3.7'
-      dist: xenial
-      sudo: true
+      python: '3.8'
       install:
         - pip install -r test-requirements.txt
       script:
@@ -72,9 +66,7 @@ jobs:
     - stage: deploy-release
       name: "Create draft release"
       language: python
-      python: '3.7'
-      dist: xenial
-      sudo: true
+      python: '3.8'
       script: echo 'Lets do it!'
       deploy:
         provider: releases
