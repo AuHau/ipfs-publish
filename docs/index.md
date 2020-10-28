@@ -49,7 +49,7 @@ webhook server is listening for incoming connections. And volume on path `/data/
 This image does not have IPFS daemon, therefore you have to provide connectivity to the daemon of your choice. 
 
 !!! info "go-ipfs verion"
-    ipfs-publish is tested with go-ipfs version **v0.4.23**, using different versions might result in unexpected behaviour!
+    ipfs-publish is tested with go-ipfs version **v0.4.23**! The IPFS HTTP Client should support the version up to v0.7.0, but I have not tested it yet.
 
 Easiest way to deploy ipfs-publish is using `docker-compose`, together with `go-ipfs` as container. 
 You can use this YAML configuration for it:
