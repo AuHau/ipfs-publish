@@ -592,7 +592,6 @@ can be found in <code>publish.http:app</code> package.</p>
 <p>You can install ipfs-publish directly on your machine using <code>pip</code>:</p>
 <div class="codehilite"><pre><span></span><code>$ pip install ipfs-publish
 </code></pre></div>
-
 <p>Then you can use the command <code>ipfs-publish</code> to manage your repos and/or start the webhook's server.</p>
 <h3 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h3>
 <p>If you plan to let some other users to use your ipfs-publish instance, then it might be good idea to run it inside
@@ -602,7 +601,7 @@ webhook server is listening for incoming connections. And volume on path <code>/
 This image does not have IPFS daemon, therefore you have to provide connectivity to the daemon of your choice. </p>
 <div class="admonition info">
 <p class="admonition-title">go-ipfs verion</p>
-<p>ipfs-publish is tested with go-ipfs version <strong>v0.4.23</strong>, using different versions might result in unexpected behaviour!</p>
+<p>ipfs-publish is tested with go-ipfs version <strong>v0.4.23</strong>! The IPFS HTTP Client should support the version up to v0.7.0, but I have not tested it yet.</p>
 </div>
 <p>Easiest way to deploy ipfs-publish is using <code>docker-compose</code>, together with <code>go-ipfs</code> as container. 
 You can use this YAML configuration for it:</p>
@@ -626,13 +625,11 @@ You can use this YAML configuration for it:</p>
     <span class="nt">ports</span><span class="p">:</span>
       <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">8080:8000</span>
 </code></pre></div>
-
 <p>Also you can deploy it as a standalone image using <code>docker</code>, but it requires some more configuration based on your use-case. 
 If you have running IPFS daemon on the host like this:</p>
 <div class="codehilite"><pre><span></span><code>$ docker run -e <span class="nv">IPFS_PUBLISH_CONFIG</span><span class="o">=</span>/data/ipfs_publish/config.toml
  -e <span class="nv">IPFS_PUBLISH_IPFS_MULTIADDR</span><span class="o">=</span>/ip4/127.0.0.1/tcp/5001/http --network<span class="o">=</span><span class="s2">&quot;host&quot;</span> auhau/ipfs_publish
 </code></pre></div>
-
 <div class="admonition warning">
 <p class="admonition-title">Host network</p>
 <p><code>--network="host"</code> will bind the container's ports directly to the machine exposing it to the world, so be careful
@@ -670,7 +667,6 @@ ExecStart=ipfs-publish server
 [Install]
 WantedBy=multi-user.target
 </code></pre></div>
-
 <p>Moreover you can define reloading service which can automatically reload the configuration inside the server on change
 and hence mitigate the current limitation of ipfs-publish. You can define it as:</p>
 <p><strong>ipfs-publish-watcher.service</strong>
@@ -696,7 +692,6 @@ WantedBy=multi-user.target
 <div class="codehilite"><pre><span></span><code>$ systemctl <span class="nb">enable</span> ipfs-publish-watcher.service <span class="o">&amp;&amp;</span> systemctl start ipfs-publish-watcher.service
 $ systemctl <span class="nb">enable</span> ipfs-publish-watcher.path <span class="o">&amp;&amp;</span> systemctl start ipfs-publish-watcher.path
 </code></pre></div>
-
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>Upon the first invocation of the command <code>ipfs-publish</code>, you are asked to specify some general configuration, like
 how to connect to the IPFS daemon etc. This process will create the config file. </p>
@@ -748,7 +743,6 @@ $ ipfs-publish publish github_com_auhau_auhau_github_io
 $ ipfs-publish server <span class="p">&amp;</span>
 Running on http://localhost:8080 <span class="o">(</span>CTRL + C to quit<span class="o">)</span>
 </code></pre></div>
-
 <div class="admonition warning">
 <p class="admonition-title">Restarting server after changes</p>
 <p>If you do any modifications of the ipfs-publish state (eq. call <code>add</code> / <code>remove</code> commands) than
@@ -791,7 +785,6 @@ of the repo's configuration: <code>[repos.&lt;name of repo&gt;.execute]</code> u
 <div class="codehilite"><pre><span></span><code><span class="k">[repos.github_com_auhau_auhau_github_io.execute]</span>
 <span class="n">build_bin</span> <span class="o">=</span> <span class="s">&quot;jekyll build&quot;</span>
 </code></pre></div>
-
 <h3 id="after-publish-binary">After-publish binary<a class="headerlink" href="#after-publish-binary" title="Permanent link">&para;</a></h3>
 <p>Similarly to building binary, there is also support for running a command after publishing to the IPFS. This can be
 used for example to directly set the CID to your dns_link TXT record and not depend on IPNS. The published
@@ -801,7 +794,6 @@ of the repo's configuration: <code>[repos.&lt;name of repo&gt;.execute]</code> u
 <div class="codehilite"><pre><span></span><code><span class="k">[repos.github_com_auhau_auhau_github_io.execute]</span>
 <span class="n">after_publish_bin</span> <span class="o">=</span> <span class="s">&quot;update-dns.sh&quot;</span>
 </code></pre></div>
-
 <h3 id="publishing-sub-directory">Publishing sub-directory<a class="headerlink" href="#publishing-sub-directory" title="Permanent link">&para;</a></h3>
 <p>ipfs-publish enables you to publish only part of the repo, by specifying the <code>publish_dir</code> parameter. This can be used
 together with the building binary to publish only the build site sub-folder.</p>
@@ -811,7 +803,6 @@ repo, or later on adding <code>branch=&lt;name&gt;</code> to the config:</p>
 <div class="codehilite"><pre><span></span><code><span class="k">[repos.github_com_auhau_auhau_github_io]</span>
 <span class="n">branch</span> <span class="o">=</span> <span class="s">&quot;gh-pages&quot;</span>
 </code></pre></div>
-
 <h3 id="cloudflare">CloudFlare<a class="headerlink" href="#cloudflare" title="Permanent link">&para;</a></h3>
 <p>As IPNS is currently not very performent for resolution, it is best practice to avoid it. In order to overcome this, there
 is native support for changing DNSLink DNS record on CloudFlare provider (for other providers you have to write your own
