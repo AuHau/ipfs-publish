@@ -303,7 +303,7 @@ possible ways how to do that see [python-cloudflare](https://github.com/cloudfla
 documentation.
 
 !!! danger "DNS Access"
-    Configure this with security in mind! If somebody would stole your API token, he can very effectively attack your website!
+    Configure this with security in mind! If somebody stole your API token, they could very effectively attack your website!
     
 !!! tip "Scoped API tokens"
     Use API Tokens with smallest privileges (eq. edit DNS entry) and limit them only to Zone that is needed!
