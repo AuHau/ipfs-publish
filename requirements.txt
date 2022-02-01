@@ -1,7 +1,7 @@
 gitpython==3.1.26
 click==8.0.3
 click-completion==0.5.2
-inquirer==2.7.0
+inquirer==2.9.1
 pbr==5.4.4
 quart==0.13.1
 ipfshttpclient==0.6.1
