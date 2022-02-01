@@ -3,7 +3,7 @@ click==8.0.3
 click-completion==0.5.2
 inquirer==2.9.1
 pbr==5.8.0
-quart==0.13.1
+quart==0.16.2
 ipfshttpclient==0.6.1
 toml==0.10.1
 appdirs==1.4.4
