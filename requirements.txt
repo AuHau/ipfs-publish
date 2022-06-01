@@ -5,6 +5,6 @@ inquirer==2.9.2
 pbr==5.9.0
 quart==0.17.0
 ipfshttpclient==0.7.0
-toml==0.10.1
+toml==0.10.2
 appdirs==1.4.4
 cloudflare==2.8.13
