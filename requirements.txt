@@ -4,7 +4,7 @@ click-completion==0.5.2
 inquirer==2.10.0
 pbr==5.10.0
 quart==0.18.0
-ipfshttpclient==0.6.1
+ipfshttpclient==0.7.0
 toml==0.10.1
 appdirs==1.4.4
 cloudflare==2.8.13
