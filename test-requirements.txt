@@ -7,4 +7,4 @@ factory_boy==3.2.1
 # Docs
 mkdocs-material==9.0.9
 mkdocs==1.4.2
-pymdown-extensions==6.3
+pymdown-extensions==9.9.2
